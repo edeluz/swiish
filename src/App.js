@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import PhoneInput from 'react-phone-number-input';
@@ -332,8 +333,11 @@ const extractBaseColorFromGradient = (gradient) => {
 };
 
 // Modal Component
-function Modal({ isOpen, onClose, type = 'info', title, message, onConfirm, confirmText = 'OK', cancelText = 'Cancel', inputLabel, inputPlaceholder, inputValue, onInputChange }) {
+function Modal({ isOpen, onClose, type = 'info', title, message, onConfirm, confirmText, cancelText, inputLabel, inputPlaceholder, inputValue, onInputChange }) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
+  const resolvedConfirmText = confirmText || t('common.ok');
+  const resolvedCancelText = cancelText || t('common.cancel');
 
   const typeStyles = {
     info: { icon: AlertCircle, iconColor: 'text-info-text dark:text-info-text-dark', bgColor: 'bg-info-bg dark:bg-info-bg-dark', borderColor: 'border-info-border dark:border-info-border-dark' },
@@ -391,7 +395,7 @@ function Modal({ isOpen, onClose, type = 'info', title, message, onConfirm, conf
               onClick={onClose}
               className="flex-1 px-4 py-2.5 rounded-full font-medium text-text-secondary dark:text-text-secondary-dark bg-surface dark:bg-surface-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors"
             >
-              {cancelText}
+              {resolvedCancelText}
             </button>
           )}
           <button
@@ -403,7 +407,7 @@ function Modal({ isOpen, onClose, type = 'info', title, message, onConfirm, conf
               'bg-info dark:bg-info-dark hover:bg-info-hover dark:hover:bg-info-hover-dark'
             }`}
           >
-            {confirmText}
+            {resolvedConfirmText}
           </button>
         </div>
       </div>
@@ -571,7 +575,41 @@ function VersionBadge() {
   );
 }
 
+function LanguageToggle({ variant = 'default' }) {
+  const { i18n } = useTranslation();
+
+  const wrapperClass = variant === 'overlay'
+    ? 'px-1.5 py-1.5 rounded-full bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm flex items-center gap-1 whitespace-nowrap'
+    : 'px-1.5 py-1.5 md:px-2 md:py-2 rounded-full bg-card dark:bg-card-dark border border-border dark:border-border-dark flex items-center gap-1 whitespace-nowrap';
+
+  const activeClass = variant === 'overlay'
+    ? 'bg-white/40 dark:bg-black/40'
+    : 'bg-surface dark:bg-surface-dark';
+
+  return (
+    <div className={wrapperClass}>
+      <button
+        onClick={() => i18n.changeLanguage('es')}
+        title="Español"
+        aria-pressed={i18n.language === 'es'}
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-colors ${i18n.language === 'es' ? activeClass : 'opacity-50 hover:opacity-80'}`}
+      >
+        <span role="img" aria-label="Español">🇪🇸</span>
+      </button>
+      <button
+        onClick={() => i18n.changeLanguage('en')}
+        title="English"
+        aria-pressed={i18n.language === 'en'}
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-colors ${i18n.language === 'en' ? activeClass : 'opacity-50 hover:opacity-80'}`}
+      >
+        <span role="img" aria-label="English">🇬🇧</span>
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   // Note: useParams() doesn't work at App level (Routes are children), so we extract params from location.pathname
@@ -594,7 +632,7 @@ export default function App() {
   const [userRole, setUserRole] = useState(null); // 'owner' or 'member'
   const [csrfToken, setCsrfToken] = useState('');
   const [error, setError] = useState('');
-  const [modal, setModal] = useState({ isOpen: false, type: 'info', title: '', message: '', onConfirm: null, onClose: null, confirmText: 'OK', cancelText: 'Cancel' });
+  const [modal, setModal] = useState({ isOpen: false, type: 'info', title: '', message: '', onConfirm: null, onClose: null, confirmText: '', cancelText: '' });
   const [createCardModal, setCreateCardModal] = useState({ isOpen: false, slug: '', userId: null });
   const [targetUserIdForNewCard, setTargetUserIdForNewCard] = useState(null);
   const editInProgressRef = useRef(false);
@@ -704,6 +742,7 @@ export default function App() {
     }, 100);
   };
 
+
   // Demo Mode Banner Component
   const DemoModeBanner = () => {
     if (!isDemoMode) return null;
@@ -713,10 +752,10 @@ export default function App() {
         <div className="flex items-center justify-center gap-3">
           <span className="text-2xl">🛠️</span>
           <span className="font-semibold text-amber-900 dark:text-amber-100">
-            Demo Mode
+            {t('common.demoMode')}
           </span>
           <span className="text-sm text-amber-700 dark:text-amber-300">
-            All changes reset every {demoResetInterval} minutes
+            {t('common.demoModeReset', { minutes: demoResetInterval })}
           </span>
         </div>
       </div>
@@ -725,10 +764,10 @@ export default function App() {
 
   // Helper functions to show modals
   const showAlert = (message, type = 'info', title = '', onClose = null) => {
-    setModal({ isOpen: true, type, title, message, onConfirm: null, onClose, confirmText: 'OK', cancelText: 'Cancel' });
+    setModal({ isOpen: true, type, title, message, onConfirm: null, onClose, confirmText: '', cancelText: '' });
   };
 
-  const showConfirm = (message, onConfirm, title = 'Confirm', confirmText = 'Confirm', cancelText = 'Cancel') => {
+  const showConfirm = (message, onConfirm, title = t('common.confirm'), confirmText = t('common.confirm'), cancelText = '') => {
     setModal({ isOpen: true, type: 'confirm', title, message, onConfirm, onClose: null, confirmText, cancelText });
   };
 
@@ -1738,7 +1777,7 @@ const [settings, setSettings] = useState({
     <>
       {view === 'loading' && (
         <>
-          <div className="h-screen flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark bg-main dark:bg-main-dark bg-main-texture">Loading...</div>
+          <div className="h-screen flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark bg-main dark:bg-main-dark bg-main-texture">{t('common.loading')}</div>
           <Modal isOpen={modal.isOpen} onClose={closeModal} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirm} confirmText={modal.confirmText} cancelText={modal.cancelText} />
         </>
       )}
@@ -1746,7 +1785,7 @@ const [settings, setSettings] = useState({
         <>
           <div className="h-screen flex flex-col items-center justify-center bg-main dark:bg-main-dark bg-main-texture">
             <h1 className="text-4xl font-bold text-text-primary dark:text-text-primary-dark mb-2">404</h1>
-            <p className="text-text-muted dark:text-text-muted-dark">Card not found.</p>
+            <p className="text-text-muted dark:text-text-muted-dark">{t('admin.cardNotFound')}</p>
           </div>
           <Modal isOpen={modal.isOpen} onClose={closeModal} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirm} confirmText={modal.confirmText} cancelText={modal.cancelText} />
         </>
@@ -1757,49 +1796,49 @@ const [settings, setSettings] = useState({
             <div className="bg-card dark:bg-card-dark max-w-md w-full rounded-page shadow-xl p-8">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400"><Settings className="w-8 h-8" /></div>
-                <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">Initial Setup</h1>
-                <p className="text-sm text-text-muted dark:text-text-muted-dark mt-2">Configure your organisation and create the first admin user</p>
+                <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('admin.setup.title')}</h1>
+                <p className="text-sm text-text-muted dark:text-text-muted-dark mt-2">{t('admin.setup.subtitle')}</p>
               </div>
               <form onSubmit={handleSetup} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2">Organisation Name</label>
-                  <input 
-                    type="text" 
-                    value={setupData.organisationName} 
-                    onChange={e => setSetupData({ ...setupData, organisationName: e.target.value })} 
-                    placeholder="My Organization" 
-                    className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" 
-                    required 
-                    autoFocus 
+                  <label className="block text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2">{t('admin.setup.organisationName')}</label>
+                  <input
+                    type="text"
+                    value={setupData.organisationName}
+                    onChange={e => setSetupData({ ...setupData, organisationName: e.target.value })}
+                    placeholder={t('admin.setup.organisationNamePlaceholder')}
+                    className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark"
+                    required
+                    autoFocus
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2">Admin Email</label>
-                  <input 
-                    type="email" 
-                    value={setupData.adminEmail} 
-                    onChange={e => setSetupData({ ...setupData, adminEmail: e.target.value })} 
-                    placeholder="admin@example.com" 
-                    className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" 
-                    required 
+                  <label className="block text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2">{t('admin.setup.adminEmail')}</label>
+                  <input
+                    type="email"
+                    value={setupData.adminEmail}
+                    onChange={e => setSetupData({ ...setupData, adminEmail: e.target.value })}
+                    placeholder="admin@example.com"
+                    className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2">Admin Password</label>
-                  <input 
-                    type="password" 
-                    value={setupData.adminPassword} 
-                    onChange={e => setSetupData({ ...setupData, adminPassword: e.target.value })} 
-                    placeholder="Minimum 8 characters" 
-                    className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" 
-                    required 
+                  <label className="block text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2">{t('admin.setup.adminPassword')}</label>
+                  <input
+                    type="password"
+                    value={setupData.adminPassword}
+                    onChange={e => setSetupData({ ...setupData, adminPassword: e.target.value })}
+                    placeholder={t('admin.setup.passwordPlaceholder')}
+                    className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark"
+                    required
                     minLength={8}
                   />
-                  <p className="text-xs text-text-muted dark:text-text-muted-dark mt-1">Password must be at least 8 characters long</p>
+                  <p className="text-xs text-text-muted dark:text-text-muted-dark mt-1">{t('admin.setup.passwordHint')}</p>
                 </div>
                 {error && <div className="flex items-center gap-2 text-error-text dark:text-error-text-dark text-sm">{error}</div>}
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isSettingUp}
                   className="w-full py-3.5 rounded-full bg-action dark:bg-action-dark text-white font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
@@ -1810,7 +1849,7 @@ const [settings, setSettings] = useState({
                   ) : (
                     <Save className="w-4 h-4" />
                   )}
-                  {isSettingUp ? 'Setting up...' : 'Complete Setup'}
+                  {isSettingUp ? t('common.settingUp') : t('admin.setup.completeSetup')}
                 </button>
               </form>
               <div className="text-center mt-auto pt-8 pb-0 group relative z-10" style={{ boxSizing: 'content-box' }}>
@@ -1831,13 +1870,13 @@ const [settings, setSettings] = useState({
             <div className="bg-card dark:bg-card-dark max-w-sm w-full rounded-page shadow-xl p-8">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400"><Lock className="w-8 h-8" /></div>
-                <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">Login</h1>
+                <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('admin.loginTitle')}</h1>
               </div>
               <form onSubmit={handleLogin} className="space-y-4">
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus />
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" />
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('admin.emailPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus />
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('admin.passwordPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" />
                 {error && <div className="flex items-center gap-2 text-error-text dark:text-error-text-dark text-sm">{error}</div>}
-                <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">Login</button>
+                <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">{t('admin.loginTitle')}</button>
               </form>
             <div className="text-center mt-8 group relative z-10">
               <div className="flex justify-center">
@@ -1858,26 +1897,27 @@ const [settings, setSettings] = useState({
             {/* UPDATED HEADER: flex-wrap + gap adjustments for mobile */}
             <div className="flex flex-wrap justify-between items-center mb-8 gap-4 relative z-10">
                <div>
-                 <h1 className="text-2xl md:text-3xl font-bold text-text-primary dark:text-text-primary-dark">People</h1>
-                 <p className="text-sm md:text-base text-text-muted dark:text-text-muted-dark">Manage your people</p>
+                 <h1 className="text-2xl md:text-3xl font-bold text-text-primary dark:text-text-primary-dark">{t('admin.peopleTitle')}</h1>
+                 <p className="text-sm md:text-base text-text-muted dark:text-text-muted-dark">{t('admin.managePeople')}</p>
                </div>
                <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
+                 <LanguageToggle />
                  <button onClick={toggleDarkMode} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap flex items-center gap-2 text-sm md:text-base">
                    {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                  </button>
-                 <button onClick={handleLogout} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap text-sm md:text-base">Logout</button>
+                 <button onClick={handleLogout} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap text-sm md:text-base">{t('auth.logout')}</button>
                  {userRole === 'owner' && (
                    <button onClick={() => navigate('/settings')} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-secondary dark:text-text-secondary-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap flex items-center gap-2 text-sm md:text-base">
-                     <Settings className="w-4 h-4" /> <span className="hidden sm:inline">Organisation</span><span className="sm:hidden">Org</span>
+                     <Settings className="w-4 h-4" /> <span className="hidden sm:inline">{t('admin.organisation')}</span><span className="sm:hidden">{t('admin.org')}</span>
                    </button>
                  )}
                  {userRole === 'owner' && (
                    <button onClick={() => navigate('/users')} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-secondary dark:text-text-secondary-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap flex items-center gap-2 text-sm md:text-base">
-                     <Users className="w-4 h-4" /> Users
+                     <Users className="w-4 h-4" /> {t('admin.users')}
                    </button>
                  )}
                  <button onClick={handleCreateNew} className="bg-action dark:bg-action-dark text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold flex items-center gap-2 hover:bg-action-hover dark:hover:bg-action-hover-dark transition-all whitespace-nowrap text-sm md:text-base">
-                   <Plus className="w-4 h-4 md:w-5 md:h-5" /> New Person
+                   <Plus className="w-4 h-4 md:w-5 md:h-5" /> {t('admin.newPerson')}
                  </button>
                </div>
             </div>
@@ -1900,7 +1940,7 @@ const [settings, setSettings] = useState({
                                 ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' 
                                 : 'bg-surface dark:bg-surface-dark text-text-primary dark:text-text-secondary-dark'
                             }`}>
-                              {user.userRole === 'owner' ? 'Owner' : 'Member'}
+                              {user.userRole === 'owner' ? t('admin.dashboard.ownerLabel') : t('admin.dashboard.memberLabel')}
                             </span>
                             {user.userCreatedAt && (
                               <span className="text-text-muted dark:text-text-muted-dark text-[10px]">
@@ -1917,14 +1957,14 @@ const [settings, setSettings] = useState({
                                     onChange={(e) => handleUpdateRole(user.userId, e.target.value)}
                                     className="flex-1 px-2 py-1 text-[10px] rounded border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark"
                                   >
-                                    <option value="member">Member</option>
-                                    <option value="owner">Owner</option>
+                                    <option value="member">{t('admin.dashboard.memberLabel')}</option>
+                                    <option value="owner">{t('admin.dashboard.ownerLabel')}</option>
                                   </select>
                                   <button
                                     onClick={() => setEditingUserId(null)}
                                     className="px-2 py-1 text-[10px] bg-surface dark:bg-surface-dark text-text-primary dark:text-text-secondary-dark rounded hover:bg-surface dark:hover:bg-surface-dark"
                                   >
-                                    Cancel
+                                    {t('common.cancel')}
                                   </button>
                                 </div>
                               ) : (
@@ -1933,13 +1973,13 @@ const [settings, setSettings] = useState({
                                     onClick={() => setEditingUserId(user.userId)}
                                     className="flex-1 px-2 py-1 text-[10px] bg-surface dark:bg-surface-dark text-text-primary dark:text-text-secondary-dark rounded hover:bg-surface dark:hover:bg-surface-dark flex items-center justify-center gap-1"
                                   >
-                                    <Edit3 className="w-3 h-3" /> Role
+                                    <Edit3 className="w-3 h-3" /> {t('admin.dashboard.role')}
                                   </button>
                                   <button
                                     onClick={() => handleRemoveUser(user.userId, user.userEmail)}
                                     className="flex-1 px-2 py-1 text-[10px] bg-error-bg dark:bg-error-bg-dark text-error dark:text-error-text-dark rounded hover:bg-error-bg dark:hover:bg-error-bg-dark flex items-center justify-center gap-1"
                                   >
-                                    <Trash2 className="w-3 h-3" /> Remove
+                                    <Trash2 className="w-3 h-3" /> {t('admin.dashboard.remove')}
                                   </button>
                                 </>
                               )}
@@ -1947,7 +1987,7 @@ const [settings, setSettings] = useState({
                           )}
                           {user.userId === currentUserId && (
                             <div className="text-[10px] text-text-muted dark:text-text-muted-dark italic mt-2 pt-2 border-t border-border dark:border-border-dark">
-                              Cannot modify yourself
+                              {t('admin.dashboard.cannotModifySelf')}
                             </div>
                           )}
                         </div>
@@ -1973,17 +2013,17 @@ const [settings, setSettings] = useState({
                                     {card.title && <p className="text-text-muted dark:text-text-muted-dark text-xs mb-1 truncate">{card.title}</p>}
                                     <div className="space-y-0.5">
                                       {card.shortCode && (
-                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title="Short Code URL">
-                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">Short:</span> /{card.shortCode}
+                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title={t('admin.dashboard.shortCodeUrlTitle')}>
+                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.shortLabel')}</span> /{card.shortCode}
                                         </div>
                                       )}
                                       {card.orgSlug && card.slug ? (
-                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title="Org-scoped URL">
-                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">URL:</span> /{card.orgSlug}/{card.slug}
+                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title={t('admin.dashboard.orgScopedUrlTitle')}>
+                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.urlLabel')}</span> /{card.orgSlug}/{card.slug}
                                         </div>
                                       ) : card.slug ? (
-                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title="Legacy URL">
-                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">URL:</span> /{card.slug}
+                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title={t('admin.dashboard.legacyUrlTitle')}>
+                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.urlLabel')}</span> /{card.slug}
                                         </div>
                                       ) : null}
                                     </div>
@@ -1996,23 +2036,23 @@ const [settings, setSettings] = useState({
                                     rel="noreferrer" 
                                     className="flex-1 py-2 text-xs font-medium text-confirm-text dark:text-confirm-text-dark bg-confirm dark:bg-confirm-dark rounded-button hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark flex items-center justify-center gap-1"
                                   >
-                                    <ExternalLink className="w-3 h-3"/> View
+                                    <ExternalLink className="w-3 h-3"/> {t('admin.dashboard.view')}
                                   </a>
-                                   <button onClick={() => handleEdit(card.slug, card.userId)} className="flex-1 py-2 text-xs font-medium text-confirm-text dark:text-confirm-text-dark bg-confirm dark:bg-confirm-dark rounded-button hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark flex items-center justify-center gap-1"><Edit3 className="w-3 h-3"/> Edit</button>
+                                   <button onClick={() => handleEdit(card.slug, card.userId)} className="flex-1 py-2 text-xs font-medium text-confirm-text dark:text-confirm-text-dark bg-confirm dark:bg-confirm-dark rounded-button hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark flex items-center justify-center gap-1"><Edit3 className="w-3 h-3"/> {t('admin.dashboard.edit')}</button>
                                 </div>
                               </div>
                             </div>
                           ))}
                           {/* Create Card button at bottom of card list */}
                           <div className="bg-surface dark:bg-surface-dark/30 rounded-t-badge rounded-b-container border-thick border-dashed border-border dark:border-border-dark p-[15px] flex items-center justify-center">
-                            <button onClick={() => setCreateCardModal({ isOpen: true, slug: '', userId: user.userId || user.userEmail })} className="px-4 py-2 text-sm font-medium text-white bg-action dark:bg-action-dark rounded-button hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center justify-center gap-2"><Plus className="w-4 h-4"/> Create Card</button>
+                            <button onClick={() => setCreateCardModal({ isOpen: true, slug: '', userId: user.userId || user.userEmail })} className="px-4 py-2 text-sm font-medium text-white bg-action dark:bg-action-dark rounded-button hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center justify-center gap-2"><Plus className="w-4 h-4"/> {t('admin.createCard')}</button>
                           </div>
                         </>
                       ) : (
                         /* No cards - show Create Card button in place */
                         <div className="bg-surface dark:bg-surface-dark/50 rounded-t-badge rounded-b-container p-5 border border-border dark:border-border-dark" style={{ aspectRatio: '1.586 / 1' }}>
                           <div className="w-full h-full bg-surface dark:bg-surface-dark/30 rounded-t-badge rounded-b-badge border-thick border-dashed border-border dark:border-border-dark flex flex-col items-center justify-center">
-                            <button onClick={() => setCreateCardModal({ isOpen: true, slug: '', userId: user.userId || user.userEmail })} className="px-4 py-3 text-sm font-medium text-white bg-action dark:bg-action-dark rounded-button hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center justify-center gap-2"><Plus className="w-4 h-4"/> Create Card</button>
+                            <button onClick={() => setCreateCardModal({ isOpen: true, slug: '', userId: user.userId || user.userEmail })} className="px-4 py-3 text-sm font-medium text-white bg-action dark:bg-action-dark rounded-button hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center justify-center gap-2"><Plus className="w-4 h-4"/> {t('admin.createCard')}</button>
                           </div>
                         </div>
                       )}
@@ -2022,7 +2062,7 @@ const [settings, setSettings] = useState({
               })}
               {cardList.length === 0 && (
                  <div className="col-span-full py-20 text-center text-text-muted-subtle dark:text-text-muted-dark bg-card dark:bg-card-dark rounded-card border-thick border-dashed border-border dark:border-border-dark">
-                   No people yet. Click "New Person" to start.
+                   {t('admin.dashboard.noPeopleYet')}
                  </div>
               )}
           </div>
@@ -2038,7 +2078,7 @@ const [settings, setSettings] = useState({
           {actionSelectionModal.isOpen && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
               <div className="bg-card dark:bg-card-dark rounded-card shadow-xl max-w-md w-full p-6">
-                <h3 className="text-lg font-bold text-text-primary dark:text-text-primary-dark mb-4">What would you like to do?</h3>
+                <h3 className="text-lg font-bold text-text-primary dark:text-text-primary-dark mb-4">{t('admin.dashboard.whatToDo')}</h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => {
@@ -2047,7 +2087,7 @@ const [settings, setSettings] = useState({
                     }}
                     className="w-full px-4 py-3 bg-action dark:bg-action-dark text-white rounded-button font-medium hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center justify-center gap-2"
                   >
-                    <Users className="w-4 h-4" /> Invite User
+                    <Users className="w-4 h-4" /> {t('admin.dashboard.inviteUser')}
                   </button>
                   <button
                     onClick={() => {
@@ -2056,14 +2096,14 @@ const [settings, setSettings] = useState({
                     }}
                     className="w-full px-4 py-3 bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark rounded-button font-medium hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark flex items-center justify-center gap-2"
                   >
-                    <User className="w-4 h-4" /> Create User
+                    <User className="w-4 h-4" /> {t('admin.dashboard.createUser')}
                   </button>
                 </div>
                 <button
                   onClick={() => setActionSelectionModal({ isOpen: false })}
                   className="w-full mt-4 px-4 py-2 bg-surface dark:bg-surface-dark text-text-primary dark:text-text-secondary-dark rounded-button font-medium hover:bg-surface dark:hover:bg-surface-dark"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>
@@ -2072,10 +2112,10 @@ const [settings, setSettings] = useState({
           {showInviteModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
               <div className="bg-card dark:bg-card-dark rounded-card shadow-xl max-w-md w-full p-6">
-                <h3 className="text-lg font-bold text-text-primary dark:text-text-primary-dark mb-4">Invite User</h3>
+                <h3 className="text-lg font-bold text-text-primary dark:text-text-primary-dark mb-4">{t('admin.dashboard.inviteModal.title')}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">Email</label>
+                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">{t('auth.email')}</label>
                     <input
                       type="email"
                       value={newInvitation.email}
@@ -2083,17 +2123,17 @@ const [settings, setSettings] = useState({
                       className="w-full px-4 py-2.5 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark focus:border-action dark:focus:border-action-dark"
                       placeholder="user@example.com"
                     />
-                    <p className="text-xs text-text-muted dark:text-text-muted-dark mt-1">An invitation email will be sent to this address</p>
+                    <p className="text-xs text-text-muted dark:text-text-muted-dark mt-1">{t('admin.dashboard.inviteModal.emailHint')}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">Role</label>
+                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">{t('admin.dashboard.inviteModal.roleLabel')}</label>
                     <select
                       value={newInvitation.role}
                       onChange={(e) => setNewInvitation({ ...newInvitation, role: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark focus:border-action dark:focus:border-action-dark"
                     >
-                      <option value="member">Member</option>
-                      <option value="owner">Owner</option>
+                      <option value="member">{t('admin.dashboard.memberLabel')}</option>
+                      <option value="owner">{t('admin.dashboard.ownerLabel')}</option>
                     </select>
                   </div>
                 </div>
@@ -2105,14 +2145,14 @@ const [settings, setSettings] = useState({
                     }}
                     className="flex-1 px-4 py-2.5 bg-surface dark:bg-surface-dark text-text-primary dark:text-text-secondary-dark rounded-button font-medium hover:bg-surface dark:hover:bg-surface-dark"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={handleSendInvitation}
                     disabled={isSavingUser}
                     className="flex-1 px-4 py-2.5 bg-action dark:bg-action-dark text-white rounded-button font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark disabled:opacity-50"
                   >
-                    {isSavingUser ? 'Sending...' : 'Send Invitation'}
+                    {isSavingUser ? t('admin.dashboard.inviteModal.sending') : t('admin.dashboard.inviteModal.sendInvitation')}
                   </button>
                 </div>
               </div>
@@ -2122,10 +2162,10 @@ const [settings, setSettings] = useState({
           {showCreateUserModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
               <div className="bg-card dark:bg-card-dark rounded-card shadow-xl max-w-md w-full p-6">
-                <h3 className="text-lg font-bold text-text-primary dark:text-text-primary-dark mb-4">Create New User</h3>
+                <h3 className="text-lg font-bold text-text-primary dark:text-text-primary-dark mb-4">{t('admin.dashboard.createUserModal.title')}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">Email</label>
+                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">{t('auth.email')}</label>
                     <input
                       type="email"
                       value={newUser.email}
@@ -2135,24 +2175,24 @@ const [settings, setSettings] = useState({
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">Password</label>
+                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">{t('admin.dashboard.createUserModal.passwordLabel')}</label>
                     <input
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark focus:border-action dark:focus:border-action-dark"
-                      placeholder="Minimum 8 characters"
+                      placeholder={t('admin.dashboard.createUserModal.passwordPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">Role</label>
+                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2 block">{t('admin.dashboard.createUserModal.roleLabel')}</label>
                     <select
                       value={newUser.role}
                       onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark focus:border-action dark:focus:border-action-dark"
                     >
-                      <option value="member">Member</option>
-                      <option value="owner">Owner</option>
+                      <option value="member">{t('admin.dashboard.memberLabel')}</option>
+                      <option value="owner">{t('admin.dashboard.ownerLabel')}</option>
                     </select>
                   </div>
                 </div>
@@ -2164,14 +2204,14 @@ const [settings, setSettings] = useState({
                     }}
                     className="flex-1 px-4 py-2.5 bg-surface dark:bg-surface-dark text-text-primary dark:text-text-secondary-dark rounded-button font-medium hover:bg-surface dark:hover:bg-surface-dark"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={handleCreateUser}
                     disabled={isSavingUser}
                     className="flex-1 px-4 py-2.5 bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark rounded-button font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark disabled:opacity-50"
                   >
-                    {isSavingUser ? 'Creating...' : 'Create User'}
+                    {isSavingUser ? t('admin.dashboard.createUserModal.creating') : t('admin.dashboard.createUserModal.createUser')}
                   </button>
                 </div>
               </div>
@@ -2183,15 +2223,15 @@ const [settings, setSettings] = useState({
             isOpen={createCardModal.isOpen}
             onClose={handleCreateCardCancel}
             type="info"
-            title="Create New Card"
-            message="Enter a user URL for the new card (e.g., 'sarah'):"
-            inputLabel="User URL"
+            title={t('admin.dashboard.createCardModal.title')}
+            message={t('admin.dashboard.createCardModal.message')}
+            inputLabel={t('admin.dashboard.createCardModal.inputLabel')}
             inputPlaceholder="sarah"
             inputValue={createCardModal.slug}
             onInputChange={(value) => setCreateCardModal(prev => ({ ...prev, slug: value }))}
             onConfirm={handleCreateCardConfirm}
-            confirmText="Create"
-            cancelText="Cancel"
+            confirmText={t('admin.dashboard.createCardModal.create')}
+            cancelText={t('common.cancel')}
           />
         </>
       )}
@@ -2202,35 +2242,35 @@ const [settings, setSettings] = useState({
               <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <User className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <h2 className="text-xl font-bold text-text-primary dark:text-text-primary-dark mb-2">You don't have a card yet</h2>
-              <p className="text-text-secondary dark:text-text-muted-dark mb-6">Create your first card to get started.</p>
+              <h2 className="text-xl font-bold text-text-primary dark:text-text-primary-dark mb-2">{t('admin.dashboard.memberEmpty.title')}</h2>
+              <p className="text-text-secondary dark:text-text-muted-dark mb-6">{t('admin.dashboard.memberEmpty.subtitle')}</p>
               <button
                 onClick={() => setCreateCardModal({ isOpen: true, slug: '' })}
                 className="w-full px-4 py-3 bg-action dark:bg-action-dark text-white rounded-button font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center justify-center gap-2"
               >
-                <Plus className="w-4 h-4" /> Create Card
+                <Plus className="w-4 h-4" /> {t('admin.dashboard.memberEmpty.createCard')}
               </button>
               <button
                 onClick={handleLogout}
                 className="w-full mt-3 px-4 py-2 bg-surface dark:bg-surface-dark text-text-primary dark:text-text-secondary-dark rounded-button font-medium hover:bg-surface dark:hover:bg-surface-dark"
               >
-                Logout
+                {t('auth.logout')}
               </button>
             </div>
           </div>
-          <Modal 
-            isOpen={createCardModal.isOpen} 
-            onClose={handleCreateCardCancel} 
-            type="info" 
-            title="Create New Card" 
-            message="Enter a user URL for the new card (e.g., 'sarah'):"
-            inputLabel="User URL"
+          <Modal
+            isOpen={createCardModal.isOpen}
+            onClose={handleCreateCardCancel}
+            type="info"
+            title={t('admin.dashboard.createCardModal.title')}
+            message={t('admin.dashboard.createCardModal.message')}
+            inputLabel={t('admin.dashboard.createCardModal.inputLabel')}
             inputPlaceholder="sarah"
             inputValue={createCardModal.slug}
             onInputChange={(value) => setCreateCardModal(prev => ({ ...prev, slug: value }))}
             onConfirm={handleCreateCardConfirm}
-            confirmText="Create"
-            cancelText="Cancel"
+            confirmText={t('admin.dashboard.createCardModal.create')}
+            cancelText={t('common.cancel')}
           />
           <Modal isOpen={modal.isOpen} onClose={closeModal} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirm} confirmText={modal.confirmText} cancelText={modal.cancelText} />
         </>
@@ -2349,6 +2389,7 @@ const [settings, setSettings] = useState({
 }
 
 function PublicCardRoute({ view, isPublicLoading, error, data, settings, darkMode, toggleDarkMode, showAlert, fetchCardByOrgAndSlug, fetchCardByShortCode, fetchPublicCard }) {
+  const { t } = useTranslation();
   const params = useParams();
   const location = useLocation();
   
@@ -2404,7 +2445,7 @@ function PublicCardRoute({ view, isPublicLoading, error, data, settings, darkMod
   if (isPublicLoading || ((view === 'loading' || view === 'public-loading') && hasPublicRouteParams)) {
     return (
       <div className="min-h-screen bg-main dark:bg-main-dark bg-main-texture flex justify-center items-center">
-        <div className="text-text-muted-subtle dark:text-text-muted-dark">Loading...</div>
+        <div className="text-text-muted-subtle dark:text-text-muted-dark">{t('common.loading')}</div>
       </div>
     );
   }
@@ -2414,8 +2455,8 @@ function PublicCardRoute({ view, isPublicLoading, error, data, settings, darkMod
     return (
       <div className="min-h-screen bg-main dark:bg-main-dark bg-main-texture flex justify-center items-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark mb-2">Card Not Found</h1>
-          <p className="text-text-secondary dark:text-text-muted-dark">{error || 'The card you are looking for does not exist.'}</p>
+          <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark mb-2">{t('card.notFoundTitle')}</h1>
+          <p className="text-text-secondary dark:text-text-muted-dark">{error || t('card.notFoundBody')}</p>
         </div>
       </div>
     );
@@ -2443,12 +2484,13 @@ function PublicCardRoute({ view, isPublicLoading, error, data, settings, darkMod
   // Default: show loading (shouldn't reach here, but safety net)
   return (
     <div className="min-h-screen bg-main dark:bg-main-dark bg-main-texture flex justify_center items-center">
-      <div className="text-text-muted-subtle dark:text-text-muted-dark">Loading...</div>
+      <div className="text-text-muted-subtle dark:text-text-muted-dark">{t('common.loading')}</div>
     </div>
   );
 }
 
 function CardDisplay({ data, settings, darkMode, toggleDarkMode, showAlert }) {
+  const { t } = useTranslation();
   const { personal = {}, contact = {}, social = {}, images = {}, theme = { color: 'indigo' }, links = [], privacy = {} } = data;
   const themeColor = settings?.theme_colors?.find(c => c.name === theme.color);
   const [showQR, setShowQR] = useState(false);
@@ -2478,16 +2520,14 @@ function CardDisplay({ data, settings, darkMode, toggleDarkMode, showAlert }) {
   const ownerPhoneDigits = ownerPhone.replace(/\D/g, '');
 
   const whatsappLink = ownerPhoneDigits && ownerPhoneDigits.length >= 8
-    ? `https://wa.me/${ownerPhoneDigits}?text=${encodeURIComponent(
-        'Hi, we met via your Swiish card. My name is ... and my number/email is ...'
-      )}`
+    ? `https://wa.me/${ownerPhoneDigits}?text=${encodeURIComponent(t('card.whatsappPrefill'))}`
     : null;
 
   const emailLink = ownerEmail
     ? `mailto:${ownerEmail}?subject=${encodeURIComponent(
-        'My details from Swiish'
+        t('card.emailSubject')
       )}&body=${encodeURIComponent(
-        'Hi, we met via your Swiish card.\nMy name is ...\nMy phone number is ...\nMy email address is ...'
+        t('card.emailBody')
       )}`
     : null;
 
@@ -2676,7 +2716,7 @@ function CardDisplay({ data, settings, darkMode, toggleDarkMode, showAlert }) {
         })
         .catch(err => {
           console.error('Failed to fetch simple QR code:', err);
-          setQrError('Unable to load link-only QR right now. Please try again in a moment.');
+          setQrError(t('card.qr.unableToLoadSimple'));
         });
     } else if (qrMode === 'rich' && !qrRichDataUrl) {
       fetch(`${API_ENDPOINT}/qr/${qrIdentifier}`, {
@@ -2704,7 +2744,7 @@ function CardDisplay({ data, settings, darkMode, toggleDarkMode, showAlert }) {
           if (cached) {
             setOfflineQrPayload(cached);
           }
-          setQrError('Unable to load full-details QR right now. Your last saved details are still available offline.');
+          setQrError(t('card.qr.unableToLoadRich'));
         });
     }
   }, [showQR, qrMode, qrSimpleDataUrl, qrRichDataUrl, personal, contact, social, images, theme, data]);
@@ -2762,23 +2802,23 @@ END:VCARD`;
                 <img src={currentQrDataUrl} className="w-full aspect-square mix-blend-multiply dark:mix-blend-normal" alt="QR code" />
               ) : qrMode === 'rich' && offlineQrPayload ? (
                 <div className="w-full aspect-square flex flex-col items-center justify-center text-text-muted-subtle dark:text-text-secondary-dark text-xs space-y-1">
-                  <span>{isOnline ? 'Saved details' : 'Offline mode'}</span>
+                  <span>{isOnline ? t('card.qr.savedDetails') : t('card.qr.offlineMode')}</span>
                   <span className="text-[10px] opacity-80 px-1">
-                    This code includes your saved Swiish details and a link to your card when scanned with an online device.
+                    {t('card.qr.richOfflineHint')}
                   </span>
                 </div>
               ) : (!isOnline && qrMode === 'simple' && !qrSimpleDataUrl) ? (
                 <div className="w-full aspect-square flex flex-col items-center justify-center text-text-muted-subtle dark:text-text-secondary-dark text-xs text-center space-y-1">
-                  <span>Link-only QR is available when you&apos;re online.</span>
+                  <span>{t('card.qr.simpleOfflineUnavailable')}</span>
                   <span className="text-[10px] opacity-80 px-1">
-                    Switch to \"Full details\" to use your saved offline code.
+                    {t('card.qr.switchToFullDetailsHint')}
                   </span>
                 </div>
               ) : (
                 <div className="w-full aspect-square flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-xs text-center">
                   {isOnline
-                    ? (qrError || 'Loading your QR code...')
-                    : 'Connect once to generate and save your QR code for offline use.'}
+                    ? (qrError || t('card.qr.loadingQr'))
+                    : t('card.qr.connectOnceHint')}
                 </div>
               )}
             </div>
@@ -2800,7 +2840,7 @@ END:VCARD`;
           {/* Offline note */}
           {!isOnline && offlineQrPayload && (
             <p className="text-xs text-text-muted dark:text-text-muted-dark mt-4 px-4">
-              Using last saved QR details (offline). The code includes your contact info and a link to your Swiish card.
+              {t('card.qr.offlineSavedNote')}
             </p>
           )}
         </div>
@@ -2818,7 +2858,7 @@ END:VCARD`;
                   : 'text-text-muted dark:text-text-secondary-dark'
               }`}
             >
-              Link only
+              {t('card.qr.linkOnly')}
             </button>
             <button
               type="button"
@@ -2829,12 +2869,12 @@ END:VCARD`;
                   : 'text-text-muted dark:text-text-secondary-dark'
               }`}
             >
-              Full details
+              {t('card.qr.fullDetails')}
             </button>
           </div>
 
           {/* Close button */}
-          <button onClick={() => setShowQR(false)} className="w-full max-w-md mx-auto py-3 bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark font-bold rounded-input hover:bg-surface dark:hover:bg-surface-dark text-sm transition-colors">Close</button>
+          <button onClick={() => setShowQR(false)} className="w-full max-w-md mx-auto py-3 bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark font-bold rounded-input hover:bg-surface dark:hover:bg-surface-dark text-sm transition-colors">{t('card.qr.close')}</button>
 
           {/* Swiish logo */}
           <div className="bg-card dark:bg-card-dark text-center space-y-2 mt-[24px] mb-[12px]">
@@ -2861,10 +2901,11 @@ END:VCARD`;
           })()
         )}
         <div className="absolute top-4 right-4 flex gap-2">
+          <LanguageToggle variant="overlay" />
           <button onClick={toggleDarkMode} className="bg-white/30 dark:bg-black/30 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/40 dark:hover:bg-black/40 transition-all border border-white/20 dark:border-white/10 shadow-sm">
             {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          <button onClick={() => setShowQR(true)} className="bg-white/30 dark:bg-black/30 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/40 dark:hover:bg-black/40 transition-all border border-white/20 dark:border-white/10 shadow-sm" aria-label="Show QR code" title="Show QR code">
+          <button onClick={() => setShowQR(true)} className="bg-white/30 dark:bg-black/30 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/40 dark:hover:bg-black/40 transition-all border border-white/20 dark:border-white/10 shadow-sm" aria-label={t('card.showQrLabel')} title={t('card.showQrLabel')}>
             <Share2 className="w-5 h-5" />
           </button>
           {shouldShowInstallButton && (
@@ -2881,9 +2922,9 @@ END:VCARD`;
                     console.error('Install prompt failed:', e);
                     if (typeof showAlert === 'function') {
                       showAlert(
-                        'Install prompt failed. Please use your browser menu to install: Chrome/Edge (three dots menu > Install app), Firefox (menu > Install), or Safari (Share > Add to Home Screen).',
+                        t('card.install.failedAlert'),
                         'error',
-                        'Install Failed'
+                        t('card.install.failedTitle')
                       );
                     }
                   } finally {
@@ -2897,34 +2938,34 @@ END:VCARD`;
                   if (isStandalone) {
                     if (typeof showAlert === 'function') {
                       showAlert(
-                        'This app is already installed on your device.',
+                        t('card.install.alreadyInstalled'),
                         'info',
-                        'Already Installed'
+                        t('card.install.alreadyInstalledTitle')
                       );
                     }
                     setIsPwaInstalled(true);
                   } else {
                     // Provide manual installation instructions
                     const userAgent = navigator.userAgent.toLowerCase();
-                    let instructions = 'To install this app:\n\n';
-                    
+                    let instructions = t('card.install.manualIntro');
+
                     if (userAgent.includes('chrome') || userAgent.includes('edge')) {
-                      instructions += 'Chrome/Edge: Click the three dots menu (⋮) in the address bar, then select "Install app" or "Add to Home Screen".';
+                      instructions += t('card.install.chromeEdge');
                     } else if (userAgent.includes('firefox')) {
-                      instructions += 'Firefox: Click the menu button, then select "Install" or "Add to Home Screen".';
+                      instructions += t('card.install.firefox');
                     } else if (userAgent.includes('safari')) {
-                      instructions += 'Safari (iOS): Tap the Share button, then "Add to Home Screen".';
+                      instructions += t('card.install.safari');
                     } else {
-                      instructions += 'Open your browser menu and look for "Install app" or "Add to Home Screen" option.';
+                      instructions += t('card.install.generic');
                     }
-                    
-                    instructions += '\n\nNote: The install button may not be available if the app doesn\'t meet PWA requirements (service worker, valid manifest, etc.).';
-                    
+
+                    instructions += t('card.install.requirementsNote');
+
                     if (typeof showAlert === 'function') {
                       showAlert(
                         instructions,
                         'info',
-                        'Install Swiish'
+                        t('card.install.title')
                       );
                     } else {
                       // Fallback if showAlert is not available
@@ -2934,15 +2975,15 @@ END:VCARD`;
                 }
               }}
               className="bg-white/30 dark:bg-black/30 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/40 dark:hover:bg-black/40 transition-all border border-white/20 dark:border-white/10 shadow-sm"
-              aria-label="Install app for offline access"
-              title="Install app for offline access"
+              aria-label={t('card.installAppLabel')}
+              title={t('card.installAppLabel')}
             >
               <Download className="w-5 h-5" />
             </button>
           )}
           {!isOnline && offlineQrPayload && (
             <span className="hidden xs:inline-flex items-center px-3 py-1 rounded-full text-[10px] font-semibold bg-amber-500/80 text-white shadow-sm">
-              Offline QR ready
+              {t('card.offlineQrReady')}
             </span>
           )}
         </div>
@@ -2954,7 +2995,7 @@ END:VCARD`;
         </div>
 
         <div className="space-y-1 mb-8">
-          <h1 className="text-3xl font-bold text-text-primary dark:text-text-primary-dark tracking-tight">{sanitizeText(`${personal.firstName || ''} ${personal.lastName || ''}`).trim() || 'Untitled'}</h1>
+          <h1 className="text-3xl font-bold text-text-primary dark:text-text-primary-dark tracking-tight">{sanitizeText(`${personal.firstName || ''} ${personal.lastName || ''}`).trim() || t('card.untitled')}</h1>
           {(() => {
             const color = settings?.theme_colors?.find(c => c.name === theme.color);
             const title = sanitizeText(personal.title || '');
@@ -2991,17 +3032,17 @@ END:VCARD`;
                       e.target.style.backgroundColor = color.buttonStyle;
                     }}
                   >
-                    <Save className="w-5 h-5" /> Save Contact
+                    <Save className="w-5 h-5" /> {t('card.saveContact')}
                   </button>
                 );
               }
               return (
-                <button 
-                  onClick={generateVCard} 
+                <button
+                  onClick={generateVCard}
                   className="col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-white shadow-lg transition-transform active:scale-[0.98]"
                   style={{ backgroundColor: getButtonColor(theme.color, settings) }}
                 >
-                  <Save className="w-5 h-5" /> Save Contact
+                  <Save className="w-5 h-5" /> {t('card.saveContact')}
                 </button>
               );
             }
@@ -3020,7 +3061,7 @@ END:VCARD`;
                   onClick={() => setContactRevealed(true)}
                   className="col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
                 >
-                  <Eye className="w-5 h-5" /> See my details
+                  <Eye className="w-5 h-5" /> {t('card.seeMyDetails')}
                 </button>
               );
             }
@@ -3048,7 +3089,7 @@ END:VCARD`;
                     }}
                     className="flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
                   >
-                    <Mail className="w-5 h-5" /> Email
+                    <Mail className="w-5 h-5" /> {t('card.email')}
                   </a>
                 )}
                 {hasPhone && (
@@ -3064,7 +3105,7 @@ END:VCARD`;
                     }}
                     className="flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
                   >
-                    <Phone className="w-5 h-5" /> Call
+                    <Phone className="w-5 h-5" /> {t('card.call')}
                   </a>
                 )}
               </>
@@ -3080,7 +3121,7 @@ END:VCARD`;
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-confirm text-confirm-text dark:bg-confirm-dark dark:text-confirm-text-dark hover:opacity-90 transition-colors shadow-lg active:scale-[0.98]"
           >
             <MessageCircle className="w-5 h-5" />
-            {showSendOptions ? 'Hide send options' : 'Send your details'}
+            {showSendOptions ? t('card.hideSendOptions') : t('card.sendDetails')}
           </button>
 
           {showSendOptions && (
@@ -3093,7 +3134,7 @@ END:VCARD`;
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-full font-semibold bg-success dark:bg-success-dark text-white hover:bg-success-hover dark:hover:bg-success-hover-dark transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" />
-                  WhatsApp me your number
+                  {t('card.whatsappCta')}
                 </a>
               )}
 
@@ -3103,7 +3144,7 @@ END:VCARD`;
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
                 >
                   <Mail className="w-5 h-5" />
-                  Email me your details
+                  {t('card.emailCta')}
                 </a>
               )}
 
@@ -3113,12 +3154,12 @@ END:VCARD`;
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
                 >
                   <Phone className="w-5 h-5" />
-                  Drop call me your number
+                  {t('card.dropCallCta')}
                 </a>
               )}
 
               <p className="mt-1 text-[11px] text-text-muted dark:text-text-muted-dark text-center">
-                Only shared with me, never sold.
+                {t('card.shareDisclaimer')}
               </p>
             </div>
           )}
@@ -3226,6 +3267,7 @@ function SortableLinkItem({ link, children }) {
 }
 
 function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, showAlert, darkMode, toggleDarkMode, isSaving, isSuccess, onLogout }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
   const [isUploading, setIsUploading] = useState(false);
   const sensors = useSensors(
@@ -3260,10 +3302,10 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
         const { url } = await res.json();
         setData(prev => ({ ...prev, images: { ...prev.images, [type]: url } }));
       } else {
-        if (showAlert) showAlert('Upload failed', 'error');
+        if (showAlert) showAlert(t('editor.uploadFailed'), 'error');
       }
     } catch (error) {
-      if (showAlert) showAlert('Upload error', 'error');
+      if (showAlert) showAlert(t('editor.uploadError'), 'error');
     } finally {
       setIsUploading(false);
     }
@@ -3311,7 +3353,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
           <div className="flex items-center gap-4">
              {!onLogout && <button onClick={onBack} className="p-2 hover:bg-surface dark:hover:bg-surface-dark rounded-full text-text-muted dark:text-text-muted-dark"><ArrowLeft className="w-5 h-5"/></button>}
              <div>
-               <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">Editing: {slug}</h1>
+               <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">{t('editor.editing', { slug })}</h1>
              </div>
           </div>
           <div className="flex items-center gap-2">
@@ -3320,7 +3362,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                 onClick={onLogout}
                 className="px-4 py-2 rounded-full text-sm font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors"
               >
-                Logout
+                {t('auth.logout')}
               </button>
             )}
             <button
@@ -3335,7 +3377,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              Save
+              {t('common.save')}
             </button>
           </div>
         </div>
@@ -3343,49 +3385,49 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
         <div className="flex-1 p-6 space-y-8">
            <div className="flex p-1 bg-surface dark:bg-surface-dark rounded-input mb-6">
               {['details', 'links', 'images', 'style', 'privacy'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-2 text-sm font-medium rounded-button capitalize transition-all ${activeTab === tab ? 'bg-card dark:bg-surface-dark shadow text-text-primary dark:text-text-primary-dark' : 'text-text-muted dark:text-text-muted-dark hover:text-text-primary dark:hover:text-text-primary-dark'}`}>{tab}</button>
+                <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-2 text-sm font-medium rounded-button capitalize transition-all ${activeTab === tab ? 'bg-card dark:bg-surface-dark shadow text-text-primary dark:text-text-primary-dark' : 'text-text-muted dark:text-text-muted-dark hover:text-text-primary dark:hover:text-text-primary-dark'}`}>{t(`editor.tabs.${tab}`)}</button>
               ))}
            </div>
 
            {activeTab === 'details' && (
              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input label="First Name" value={data.personal.firstName} onChange={v => handleInputChange('personal', 'firstName', v)} />
-                  <Input label="Last Name" value={data.personal.lastName} onChange={v => handleInputChange('personal', 'lastName', v)} />
-                  <Input label="Job Title" value={data.personal.title} onChange={v => handleInputChange('personal', 'title', v)} />
+                  <Input label={t('editor.fields.firstName')} value={data.personal.firstName} onChange={v => handleInputChange('personal', 'firstName', v)} />
+                  <Input label={t('editor.fields.lastName')} value={data.personal.lastName} onChange={v => handleInputChange('personal', 'lastName', v)} />
+                  <Input label={t('editor.fields.jobTitle')} value={data.personal.title} onChange={v => handleInputChange('personal', 'title', v)} />
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark">Organisation</label>
+                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark">{t('editor.fields.organisation')}</label>
                     <div className="relative">
-                      <input 
-                        type="text" 
-                        value={settings?.default_organisation || data.personal.company || ''} 
+                      <input
+                        type="text"
+                        value={settings?.default_organisation || data.personal.company || ''}
                         disabled
-                        className="w-full px-4 py-2.5 rounded-input border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-text-secondary dark:text-text-muted-dark cursor-not-allowed" 
-                        placeholder="Organisation Name"
+                        className="w-full px-4 py-2.5 rounded-input border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-text-secondary dark:text-text-muted-dark cursor-not-allowed"
+                        placeholder={t('editor.fields.organisationPlaceholder')}
                       />
                       <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
                         <Lock className="w-4 h-4 text-text-muted-subtle dark:text-text-muted-dark" />
                       </div>
                     </div>
-                    <p className="text-xs text-text-muted dark:text-text-muted-dark mt-1">Organisation name is set by your organisation</p>
+                    <p className="text-xs text-text-muted dark:text-text-muted-dark mt-1">{t('editor.fields.organisationNote')}</p>
                   </div>
                 </div>
-                <Input label="Location" value={data.personal.location} onChange={v => handleInputChange('personal', 'location', v)} />
-                <TextArea label="Bio" value={data.personal.bio} onChange={v => handleInputChange('personal', 'bio', v)} />
+                <Input label={t('editor.fields.location')} value={data.personal.location} onChange={v => handleInputChange('personal', 'location', v)} />
+                <TextArea label={t('editor.fields.bio')} value={data.personal.bio} onChange={v => handleInputChange('personal', 'bio', v)} />
                 <div className="h-px bg-surface dark:bg-surface-dark" />
                 <div className="space-y-4">
-                  <Input icon={Mail} placeholder="Email" value={data.contact.email} onChange={v => handleInputChange('contact', 'email', v)} type="email" />
+                  <Input icon={Mail} placeholder={t('card.email')} value={data.contact.email} onChange={v => handleInputChange('contact', 'email', v)} type="email" />
                   <div className="space-y-1">
                     <PhoneInput
                       international
                       defaultCountry="GB"
                       value={data.contact.phone || ''}
                       onChange={(value) => handleInputChange('contact', 'phone', value || '')}
-                      placeholder="Phone"
+                      placeholder={t('editor.fields.phone')}
                       flags={flags}
                     />
                   </div>
-                  <Input icon={Globe} placeholder="Website" value={data.contact.website} onChange={v => handleInputChange('contact', 'website', v)} type="url" />
+                  <Input icon={Globe} placeholder={t('editor.fields.website')} value={data.contact.website} onChange={v => handleInputChange('contact', 'website', v)} type="url" />
                   <Input icon={Linkedin} placeholder="LinkedIn" value={data.social.linkedin} onChange={v => handleInputChange('social', 'linkedin', v)} type="url" />
                   <Input icon={Twitter} placeholder="Twitter / X" value={data.social.twitter} onChange={v => handleInputChange('social', 'twitter', v)} type="url" />
                   <Input icon={Instagram} placeholder="Instagram" value={data.social.instagram} onChange={v => handleInputChange('social', 'instagram', v)} type="url" />
@@ -3397,18 +3439,18 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
            {activeTab === 'links' && (
              <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-medium text-text-primary dark:text-text-secondary-dark">Custom Links</h3>
+                    <h3 className="text-sm font-medium text-text-primary dark:text-text-secondary-dark">{t('editor.links.customLinks')}</h3>
                     {settings?.allow_links_customisation !== false ? (
-                      <button onClick={addLink} className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1"><Plus className="w-4 h-4" /> Add Link</button>
+                      <button onClick={addLink} className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1"><Plus className="w-4 h-4" /> {t('editor.links.addLink')}</button>
                     ) : (
                       <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
                         <Lock className="w-4 h-4" />
-                        <span className="text-sm">Locked</span>
+                        <span className="text-sm">{t('editor.links.locked')}</span>
                       </div>
                     )}
                 </div>
                 {settings?.allow_links_customisation === false ? (
-                  <LockedOption message="Your organisation has disabled custom links. Contact your administrator to enable this feature.">
+                  <LockedOption message={t('editor.links.lockedMessage')}>
                     <div className="space-y-4">
                       {data.links.map((link, index) => (
                         <div key={link.id} className="bg-surface dark:bg-surface-dark p-4 rounded-input border border-border dark:border-border-dark">
@@ -3425,7 +3467,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                       ))}
                       {data.links.length === 0 && (
                         <div className="text-center py-8 text-text-muted-subtle dark:text-text-muted-dark text-sm border-thick border-dashed border-border dark:border-border-dark rounded-input">
-                          No custom links yet.
+                          {t('editor.links.noLinksYet')}
                         </div>
                       )}
                     </div>
@@ -3448,7 +3490,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                                     className="p-1 rounded-button border border-border dark:border-border-dark bg-card dark:bg-surface-dark text-text-muted dark:text-text-muted-dark hover:border-action-dark hover:text-action-dark dark:hover:border-action dark:hover:text-action"
                                     {...attributes}
                                     {...listeners}
-                                    aria-label="Drag to reorder"
+                                    aria-label={t('editor.links.dragReorder')}
                                   >
                                     <GripVertical className="w-4 h-4" />
                                   </button>
@@ -3459,7 +3501,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                                     onClick={() => moveLinkUp(index)}
                                     disabled={index === 0}
                                     className={`p-1 rounded-button border border-border dark:border-border-dark bg-card dark:bg-surface-dark text-text-muted dark:text-text-muted-dark hover:border-action-dark hover:text-action-dark dark:hover:border-action dark:hover:text-action disabled:opacity-40 disabled:cursor-not-allowed`}
-                                    aria-label="Move link up"
+                                    aria-label={t('editor.links.moveUp')}
                                   >
                                     <ChevronUp className="w-4 h-4" />
                                   </button>
@@ -3468,12 +3510,12 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                                     onClick={() => moveLinkDown(index)}
                                     disabled={index === data.links.length - 1}
                                     className={`p-1 rounded-button border border-border dark:border-border-dark bg-card dark:bg-surface-dark text-text-muted dark:text-text-muted-dark hover:border-action-dark hover:text-action-dark dark:hover:border-action dark:hover:text-action disabled:opacity-40 disabled:cursor-not-allowed`}
-                                    aria-label="Move link down"
+                                    aria-label={t('editor.links.moveDown')}
                                   >
                                     <ChevronDown className="w-4 h-4" />
                                   </button>
                                 </div>
-                                <button onClick={() => removeLink(link.id)} className="absolute top-2 right-2 text-text-muted-subtle dark:text-text-muted-dark hover:text-error-text dark:hover:text-error-text-dark hover:bg-error-bg dark:hover:bg-error-bg-dark rounded-full p-1 transition-colors" aria-label="Remove link">
+                                <button onClick={() => removeLink(link.id)} className="absolute top-2 right-2 text-text-muted-subtle dark:text-text-muted-dark hover:text-error-text dark:hover:text-error-text-dark hover:bg-error-bg dark:hover:bg-error-bg-dark rounded-full p-1 transition-colors" aria-label={t('editor.links.removeLink')}>
                                   <X className="w-4 h-4"/>
                                 </button>
                                 <div className="grid gap-3 pt-6">
@@ -3481,9 +3523,9 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                                     <div className="w-10 h-10 rounded-container bg-card dark:bg-surface-dark border border-border dark:border-border-dark flex items-center justify-center shrink-0">
                                       {React.createElement(ICON_MAP[link.icon], { className: "w-5 h-5 text-text-secondary dark:text-text-secondary-dark" })}
                                     </div>
-                                    <input 
-                                      type="text" 
-                                      placeholder="Link Title (e.g. Download CV)"
+                                    <input
+                                      type="text"
+                                      placeholder={t('editor.links.linkTitlePlaceholder')}
                                       value={link.title}
                                       onChange={(e) => updateLink(link.id, 'title', e.target.value)}
                                       className="flex-1 bg-card dark:bg-surface-dark border border-border dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-input px-3 py-2 text-sm focus:outline-none focus:border-action dark:focus:border-action-dark"
@@ -3518,7 +3560,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                     </DndContext>
                     {data.links.length === 0 && (
                         <div className="text-center py-8 text-text-muted-subtle dark:text-text-muted-dark text-sm border-thick border-dashed border-border dark:border-border-dark rounded-input">
-                            No custom links yet.
+                            {t('editor.links.noLinksYet')}
                         </div>
                     )}
                 </div>
@@ -3529,17 +3571,17 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
            {activeTab === 'images' && (
               <div className="space-y-8">
                 {settings?.allow_image_customisation === false ? (
-                  <LockedOption message="Your organisation has disabled custom image uploads. Contact your administrator to enable this feature.">
+                  <LockedOption message={t('editor.images.lockedMessage')}>
                     <div className="space-y-8">
-                      <ImageUpload label="Profile Picture" image={data.images.avatar} onUpload={() => {}} onRemove={() => {}} disabled={true} />
-                      <ImageUpload label="Header Banner" image={data.images.banner} onUpload={() => {}} onRemove={() => {}} isBanner disabled={true} />
+                      <ImageUpload label={t('editor.images.profilePicture')} image={data.images.avatar} onUpload={() => {}} onRemove={() => {}} disabled={true} />
+                      <ImageUpload label={t('editor.images.headerBanner')} image={data.images.banner} onUpload={() => {}} onRemove={() => {}} isBanner disabled={true} />
                     </div>
                   </LockedOption>
                 ) : (
                   <>
-                    {isUploading && <div className="text-center text-sm text-indigo-600 dark:text-indigo-400 animate-pulse">Uploading image...</div>}
-                    <ImageUpload label="Profile Picture" image={data.images.avatar} onUpload={e => handleImageUpload('avatar', e)} onRemove={() => handleInputChange('images', 'avatar', null)} />
-                    <ImageUpload label="Header Banner" image={data.images.banner} onUpload={e => handleImageUpload('banner', e)} onRemove={() => handleInputChange('images', 'banner', null)} isBanner />
+                    {isUploading && <div className="text-center text-sm text-indigo-600 dark:text-indigo-400 animate-pulse">{t('editor.images.uploadingImage')}</div>}
+                    <ImageUpload label={t('editor.images.profilePicture')} image={data.images.avatar} onUpload={e => handleImageUpload('avatar', e)} onRemove={() => handleInputChange('images', 'avatar', null)} />
+                    <ImageUpload label={t('editor.images.headerBanner')} image={data.images.banner} onUpload={e => handleImageUpload('banner', e)} onRemove={() => handleInputChange('images', 'banner', null)} isBanner />
                   </>
                 )}
               </div>
@@ -3548,7 +3590,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
             {activeTab === 'style' && (
                <div className="space-y-6">
                  {settings?.allow_theme_customisation === false ? (
-                   <LockedOption message="Your organisation has disabled theme colour customisation. Your card will use the default theme colour.">
+                   <LockedOption message={t('editor.style.lockedMessage')}>
                      <div className="flex flex-wrap gap-4">
                        {(settings?.theme_colors || []).map(color => (
                          <div 
@@ -3581,25 +3623,25 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
             {activeTab === 'privacy' && (
               <div className="space-y-6">
                 {settings?.allow_privacy_customisation === false ? (
-                  <LockedOption message="Your organisation has disabled privacy settings customisation. Privacy settings are controlled by your organisation.">
+                  <LockedOption message={t('editor.privacy.lockedMessage')}>
                     <div className="space-y-6">
                       <Toggle
-                        label="Require Interaction"
-                        description="Requires users to click a button to reveal email and phone. Prevents basic bots from seeing contact info in the initial page load."
+                        label={t('editor.privacy.requireInteractionLabel')}
+                        description={t('editor.privacy.requireInteractionDesc')}
                         checked={data.privacy?.requireInteraction ?? true}
                         onChange={() => {}}
                       />
                       <div className="h-px bg-border-subtle" />
                       <Toggle
-                        label="Client-Side Obfuscation"
-                        description="Encodes email and phone in the HTML to make scraping harder. Note: Determined scrapers can still decode this."
+                        label={t('editor.privacy.obfuscationLabel')}
+                        description={t('editor.privacy.obfuscationDesc')}
                         checked={data.privacy?.clientSideObfuscation ?? false}
                         onChange={() => {}}
                       />
                       <div className="h-px bg-border-subtle" />
                       <Toggle
-                        label="Block Search Engines"
-                        description="Adds meta robots tag to prevent search engines from indexing this card."
+                        label={t('editor.privacy.blockRobotsLabel')}
+                        description={t('editor.privacy.blockRobotsDesc')}
                         checked={data.privacy?.blockRobots ?? false}
                         onChange={() => {}}
                       />
@@ -3608,22 +3650,22 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                 ) : (
                   <div className="space-y-6">
                     <Toggle
-                      label="Require Interaction"
-                      description="Requires users to click a button to reveal email and phone. Prevents basic bots from seeing contact info in the initial page load."
+                      label={t('editor.privacy.requireInteractionLabel')}
+                      description={t('editor.privacy.requireInteractionDesc')}
                       checked={data.privacy?.requireInteraction ?? true}
                       onChange={(checked) => handleInputChange('privacy', 'requireInteraction', checked)}
                     />
                     <div className="h-px bg-border-subtle" />
                     <Toggle
-                      label="Client-Side Obfuscation"
-                      description="Encodes email and phone in the HTML to make scraping harder. Note: Determined scrapers can still decode this."
+                      label={t('editor.privacy.obfuscationLabel')}
+                      description={t('editor.privacy.obfuscationDesc')}
                       checked={data.privacy?.clientSideObfuscation ?? false}
                       onChange={(checked) => handleInputChange('privacy', 'clientSideObfuscation', checked)}
                     />
                     <div className="h-px bg-border-subtle" />
                     <Toggle
-                      label="Block Search Engines"
-                      description="Adds meta robots tag to prevent search engines from indexing this card."
+                      label={t('editor.privacy.blockRobotsLabel')}
+                      description={t('editor.privacy.blockRobotsDesc')}
                       checked={data.privacy?.blockRobots ?? false}
                       onChange={(checked) => handleInputChange('privacy', 'blockRobots', checked)}
                     />
@@ -3662,6 +3704,7 @@ function Input({ label, icon: Icon, value, onChange, type = "text", placeholder 
 }
 
 function LockedOption({ message, children }) {
+  const { t } = useTranslation();
   return (
     <div className="relative">
       <div className="opacity-50 pointer-events-none">
@@ -3671,7 +3714,7 @@ function LockedOption({ message, children }) {
         <div className="bg-input-bg dark:bg-input-bg-dark rounded-container p-4 border border-border dark:border-border-dark shadow-lg max-w-sm mx-4">
           <div className="flex items-center gap-3 mb-2">
             <Lock className="w-5 h-5 text-text-muted dark:text-text-muted-dark" />
-            <span className="text-sm font-semibold text-text-primary dark:text-text-secondary-dark">Locked by Organisation</span>
+            <span className="text-sm font-semibold text-text-primary dark:text-text-secondary-dark">{t('editor.lockedByOrg')}</span>
           </div>
           <p className="text-xs text-text-secondary dark:text-text-muted-dark">{message}</p>
         </div>
@@ -3716,14 +3759,15 @@ function Toggle({ label, description, checked, onChange }) {
 }
 
 function ImageUpload({ label, image, onUpload, onRemove, isBanner, disabled = false }) {
+  const { t } = useTranslation();
   return (
     <section>
       <h3 className="text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-3">{label}</h3>
       <div className={`relative ${isBanner ? 'w-full h-32' : 'w-24 h-24'} rounded-input bg-surface dark:bg-surface-dark border-thick border-dashed border-border dark:border-border-dark flex items-center justify-center overflow-hidden group ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-border-dark dark:hover:border-border-dark'} transition-colors`}>
-        {image ? <img src={image} className="w-full h-full object-cover" alt="upload" /> : <div className="text-center text-text-muted-subtle dark:text-text-muted-dark pointer-events-none"><Upload className="w-6 h-6 mx-auto mb-1" /><span className="text-xs">Upload</span></div>}
+        {image ? <img src={image} className="w-full h-full object-cover" alt="upload" /> : <div className="text-center text-text-muted-subtle dark:text-text-muted-dark pointer-events-none"><Upload className="w-6 h-6 mx-auto mb-1" /><span className="text-xs">{t('editor.images.upload')}</span></div>}
         <input type="file" accept="image/*" onChange={onUpload} disabled={disabled} className="absolute inset-0 opacity-0 cursor-pointer appearance-none bg-transparent focus:outline-none disabled:cursor-not-allowed" />
       </div>
-      {image && !disabled && <button onClick={onRemove} className="mt-2 text-sm text-red-500 dark:text-red-400 font-medium hover:text-red-600 dark:hover:text-red-300">Remove</button>}
+      {image && !disabled && <button onClick={onRemove} className="mt-2 text-sm text-red-500 dark:text-red-400 font-medium hover:text-red-600 dark:hover:text-red-300">{t('editor.images.remove')}</button>}
     </section>
   );
 }

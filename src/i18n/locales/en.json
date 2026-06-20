@@ -1,0 +1,194 @@
+{
+  "auth": {
+    "login": "Login",
+    "email": "Email",
+    "password": "Password",
+    "logout": "Logout"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "settingUp": "Setting up...",
+    "loading": "Loading...",
+    "close": "Close",
+    "ok": "OK",
+    "confirm": "Confirm",
+    "demoMode": "Demo Mode",
+    "demoModeReset": "All changes reset every {{minutes}} minutes"
+  },
+  "admin": {
+    "peopleTitle": "People",
+    "managePeople": "Manage your people",
+    "organisation": "Organisation",
+    "org": "Org",
+    "users": "Users",
+    "createCard": "Create Card",
+    "newPerson": "New Person",
+    "cardNotFound": "Card not found.",
+    "loginTitle": "Login",
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Password",
+    "dashboard": {
+      "ownerLabel": "Owner",
+      "memberLabel": "Member",
+      "role": "Role",
+      "remove": "Remove",
+      "cannotModifySelf": "Cannot modify yourself",
+      "shortLabel": "Short:",
+      "urlLabel": "URL:",
+      "shortCodeUrlTitle": "Short Code URL",
+      "orgScopedUrlTitle": "Org-scoped URL",
+      "legacyUrlTitle": "Legacy URL",
+      "view": "View",
+      "edit": "Edit",
+      "noPeopleYet": "No people yet. Click \"New Person\" to start.",
+      "whatToDo": "What would you like to do?",
+      "inviteUser": "Invite User",
+      "createUser": "Create User",
+      "cancel": "Cancel",
+      "inviteModal": {
+        "title": "Invite User",
+        "emailHint": "An invitation email will be sent to this address",
+        "roleLabel": "Role",
+        "sending": "Sending...",
+        "sendInvitation": "Send Invitation"
+      },
+      "createUserModal": {
+        "title": "Create New User",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Minimum 8 characters",
+        "roleLabel": "Role",
+        "creating": "Creating...",
+        "createUser": "Create User"
+      },
+      "createCardModal": {
+        "title": "Create New Card",
+        "message": "Enter a user URL for the new card (e.g., 'sarah'):",
+        "inputLabel": "User URL",
+        "create": "Create"
+      },
+      "memberEmpty": {
+        "title": "You don't have a card yet",
+        "subtitle": "Create your first card to get started.",
+        "createCard": "Create Card"
+      }
+    },
+    "setup": {
+      "title": "Initial Setup",
+      "subtitle": "Configure your organisation and create the first admin user",
+      "organisationName": "Organisation Name",
+      "organisationNamePlaceholder": "My Organization",
+      "adminEmail": "Admin Email",
+      "adminPassword": "Admin Password",
+      "passwordPlaceholder": "Minimum 8 characters",
+      "passwordHint": "Password must be at least 8 characters long",
+      "completeSetup": "Complete Setup"
+    }
+  },
+  "card": {
+    "notFoundTitle": "Card Not Found",
+    "notFoundBody": "The card you are looking for does not exist.",
+    "untitled": "Untitled",
+    "saveContact": "Save Contact",
+    "seeMyDetails": "See my details",
+    "email": "Email",
+    "call": "Call",
+    "sendDetails": "Send your details",
+    "hideSendOptions": "Hide send options",
+    "whatsappCta": "WhatsApp me your number",
+    "emailCta": "Email me your details",
+    "dropCallCta": "Drop call me your number",
+    "shareDisclaimer": "Only shared with me, never sold.",
+    "showQrLabel": "Show QR code",
+    "installAppLabel": "Install app for offline access",
+    "offlineQrReady": "Offline QR ready",
+    "whatsappPrefill": "Hi, we met via your Swiish card. My name is ... and my number/email is ...",
+    "emailSubject": "My details from Swiish",
+    "emailBody": "Hi, we met via your Swiish card.\nMy name is ...\nMy phone number is ...\nMy email address is ...",
+    "qr": {
+      "close": "Close",
+      "linkOnly": "Link only",
+      "fullDetails": "Full details",
+      "savedDetails": "Saved details",
+      "offlineMode": "Offline mode",
+      "richOfflineHint": "This code includes your saved Swiish details and a link to your card when scanned with an online device.",
+      "simpleOfflineUnavailable": "Link-only QR is available when you're online.",
+      "switchToFullDetailsHint": "Switch to \"Full details\" to use your saved offline code.",
+      "loadingQr": "Loading your QR code...",
+      "connectOnceHint": "Connect once to generate and save your QR code for offline use.",
+      "offlineSavedNote": "Using last saved QR details (offline). The code includes your contact info and a link to your Swiish card.",
+      "unableToLoadSimple": "Unable to load link-only QR right now. Please try again in a moment.",
+      "unableToLoadRich": "Unable to load full-details QR right now. Your last saved details are still available offline."
+    },
+    "install": {
+      "failedAlert": "Install prompt failed. Please use your browser menu to install: Chrome/Edge (three dots menu > Install app), Firefox (menu > Install), or Safari (Share > Add to Home Screen).",
+      "failedTitle": "Install Failed",
+      "alreadyInstalled": "This app is already installed on your device.",
+      "alreadyInstalledTitle": "Already Installed",
+      "manualIntro": "To install this app:\n\n",
+      "chromeEdge": "Chrome/Edge: Click the three dots menu (⋮) in the address bar, then select \"Install app\" or \"Add to Home Screen\".",
+      "firefox": "Firefox: Click the menu button, then select \"Install\" or \"Add to Home Screen\".",
+      "safari": "Safari (iOS): Tap the Share button, then \"Add to Home Screen\".",
+      "generic": "Open your browser menu and look for \"Install app\" or \"Add to Home Screen\" option.",
+      "requirementsNote": "\n\nNote: The install button may not be available if the app doesn't meet PWA requirements (service worker, valid manifest, etc.).",
+      "title": "Install Swiish"
+    }
+  },
+  "editor": {
+    "editing": "Editing: {{slug}}",
+    "uploadFailed": "Upload failed",
+    "uploadError": "Upload error",
+    "lockedByOrg": "Locked by Organisation",
+    "tabs": {
+      "details": "Details",
+      "links": "Links",
+      "images": "Images",
+      "style": "Style",
+      "privacy": "Privacy"
+    },
+    "fields": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "jobTitle": "Job Title",
+      "organisation": "Organisation",
+      "organisationPlaceholder": "Organisation Name",
+      "organisationNote": "Organisation name is set by your organisation",
+      "location": "Location",
+      "bio": "Bio",
+      "phone": "Phone",
+      "website": "Website"
+    },
+    "links": {
+      "customLinks": "Custom Links",
+      "addLink": "Add Link",
+      "locked": "Locked",
+      "lockedMessage": "Your organisation has disabled custom links. Contact your administrator to enable this feature.",
+      "noLinksYet": "No custom links yet.",
+      "dragReorder": "Drag to reorder",
+      "moveUp": "Move link up",
+      "moveDown": "Move link down",
+      "removeLink": "Remove link",
+      "linkTitlePlaceholder": "Link Title (e.g. Download CV)"
+    },
+    "images": {
+      "uploadingImage": "Uploading image...",
+      "profilePicture": "Profile Picture",
+      "headerBanner": "Header Banner",
+      "lockedMessage": "Your organisation has disabled custom image uploads. Contact your administrator to enable this feature.",
+      "upload": "Upload",
+      "remove": "Remove"
+    },
+    "style": {
+      "lockedMessage": "Your organisation has disabled theme colour customisation. Your card will use the default theme colour."
+    },
+    "privacy": {
+      "lockedMessage": "Your organisation has disabled privacy settings customisation. Privacy settings are controlled by your organisation.",
+      "requireInteractionLabel": "Require Interaction",
+      "requireInteractionDesc": "Requires users to click a button to reveal email and phone. Prevents basic bots from seeing contact info in the initial page load.",
+      "obfuscationLabel": "Client-Side Obfuscation",
+      "obfuscationDesc": "Encodes email and phone in the HTML to make scraping harder. Note: Determined scrapers can still decode this.",
+      "blockRobotsLabel": "Block Search Engines",
+      "blockRobotsDesc": "Adds meta robots tag to prevent search engines from indexing this card."
+    }
+  }
+}

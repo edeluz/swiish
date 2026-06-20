@@ -1,0 +1,194 @@
+{
+  "auth": {
+    "login": "Iniciar sesión",
+    "email": "Email",
+    "password": "Contraseña",
+    "logout": "Cerrar sesión"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "settingUp": "Configurando...",
+    "loading": "Cargando...",
+    "close": "Cerrar",
+    "ok": "Aceptar",
+    "confirm": "Confirmar",
+    "demoMode": "Modo Demo",
+    "demoModeReset": "Todos los cambios se reinician cada {{minutes}} minutos"
+  },
+  "admin": {
+    "peopleTitle": "Personas",
+    "managePeople": "Gestiona tus personas",
+    "organisation": "Organización",
+    "org": "Org",
+    "users": "Usuarios",
+    "createCard": "Crear tarjeta",
+    "newPerson": "Nueva persona",
+    "cardNotFound": "Tarjeta no encontrada.",
+    "loginTitle": "Iniciar sesión",
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Contraseña",
+    "dashboard": {
+      "ownerLabel": "Propietario",
+      "memberLabel": "Miembro",
+      "role": "Rol",
+      "remove": "Eliminar",
+      "cannotModifySelf": "No podés modificarte a ti mismo",
+      "shortLabel": "Corta:",
+      "urlLabel": "URL:",
+      "shortCodeUrlTitle": "URL de código corto",
+      "orgScopedUrlTitle": "URL con organización",
+      "legacyUrlTitle": "URL antigua",
+      "view": "Ver",
+      "edit": "Editar",
+      "noPeopleYet": "Todavía no hay personas. Hacé clic en \"Nueva persona\" para empezar.",
+      "whatToDo": "¿Qué querés hacer?",
+      "inviteUser": "Invitar usuario",
+      "createUser": "Crear usuario",
+      "cancel": "Cancelar",
+      "inviteModal": {
+        "title": "Invitar usuario",
+        "emailHint": "Se enviará un email de invitación a esta dirección",
+        "roleLabel": "Rol",
+        "sending": "Enviando...",
+        "sendInvitation": "Enviar invitación"
+      },
+      "createUserModal": {
+        "title": "Crear nuevo usuario",
+        "passwordLabel": "Contraseña",
+        "passwordPlaceholder": "Mínimo 8 caracteres",
+        "roleLabel": "Rol",
+        "creating": "Creando...",
+        "createUser": "Crear usuario"
+      },
+      "createCardModal": {
+        "title": "Crear nueva tarjeta",
+        "message": "Ingresá una URL de usuario para la nueva tarjeta (ej. 'sara'):",
+        "inputLabel": "URL de usuario",
+        "create": "Crear"
+      },
+      "memberEmpty": {
+        "title": "Todavía no tenés una tarjeta",
+        "subtitle": "Creá tu primera tarjeta para empezar.",
+        "createCard": "Crear tarjeta"
+      }
+    },
+    "setup": {
+      "title": "Configuración inicial",
+      "subtitle": "Configura tu organización y crea el primer usuario administrador",
+      "organisationName": "Nombre de la organización",
+      "organisationNamePlaceholder": "Mi Organización",
+      "adminEmail": "Email del administrador",
+      "adminPassword": "Contraseña del administrador",
+      "passwordPlaceholder": "Mínimo 8 caracteres",
+      "passwordHint": "La contraseña debe tener al menos 8 caracteres",
+      "completeSetup": "Completar configuración"
+    }
+  },
+  "card": {
+    "notFoundTitle": "Tarjeta no encontrada",
+    "notFoundBody": "La tarjeta que buscás no existe.",
+    "untitled": "Sin título",
+    "saveContact": "Guardar contacto",
+    "seeMyDetails": "Ver mis datos",
+    "email": "Email",
+    "call": "Llamar",
+    "sendDetails": "Enviar tus datos",
+    "hideSendOptions": "Ocultar opciones de envío",
+    "whatsappCta": "Envíame tu número por WhatsApp",
+    "emailCta": "Envíame tus datos por email",
+    "dropCallCta": "Hacé una llamada perdida con tu número",
+    "shareDisclaimer": "Solo se comparte conmigo, nunca se vende.",
+    "showQrLabel": "Mostrar código QR",
+    "installAppLabel": "Instalar app para acceso sin conexión",
+    "offlineQrReady": "QR sin conexión listo",
+    "whatsappPrefill": "Hola, te contacto a través de tu tarjeta Swiish. Mi nombre es ... y mi número/email es ...",
+    "emailSubject": "Mis datos desde Swiish",
+    "emailBody": "Hola, te contacto a través de tu tarjeta Swiish.\nMi nombre es ...\nMi número de teléfono es ...\nMi dirección de email es ...",
+    "qr": {
+      "close": "Cerrar",
+      "linkOnly": "Solo enlace",
+      "fullDetails": "Detalles completos",
+      "savedDetails": "Datos guardados",
+      "offlineMode": "Modo sin conexión",
+      "richOfflineHint": "Este código incluye tus datos guardados de Swiish y un enlace a tu tarjeta al escanearlo con un dispositivo conectado.",
+      "simpleOfflineUnavailable": "El QR de solo enlace está disponible cuando estás en línea.",
+      "switchToFullDetailsHint": "Cambiá a \"Detalles completos\" para usar tu código guardado sin conexión.",
+      "loadingQr": "Cargando tu código QR...",
+      "connectOnceHint": "Conectate una vez para generar y guardar tu código QR para uso sin conexión.",
+      "offlineSavedNote": "Usando los últimos datos guardados del QR (sin conexión). El código incluye tu información de contacto y un enlace a tu tarjeta Swiish.",
+      "unableToLoadSimple": "No se pudo cargar el QR de solo enlace ahora. Probá de nuevo en un momento.",
+      "unableToLoadRich": "No se pudo cargar el QR de detalles completos ahora. Tus últimos datos guardados siguen disponibles sin conexión."
+    },
+    "install": {
+      "failedAlert": "No se pudo abrir el instalador. Usá el menú de tu navegador para instalar: Chrome/Edge (menú de tres puntos > Instalar app), Firefox (menú > Instalar) o Safari (Compartir > Añadir a pantalla de inicio).",
+      "failedTitle": "Error de instalación",
+      "alreadyInstalled": "Esta app ya está instalada en tu dispositivo.",
+      "alreadyInstalledTitle": "Ya instalada",
+      "manualIntro": "Para instalar esta app:\n\n",
+      "chromeEdge": "Chrome/Edge: hacé clic en el menú de tres puntos (⋮) en la barra de direcciones y elegí \"Instalar app\" o \"Añadir a pantalla de inicio\".",
+      "firefox": "Firefox: hacé clic en el botón de menú y elegí \"Instalar\" o \"Añadir a pantalla de inicio\".",
+      "safari": "Safari (iOS): tocá el botón Compartir y luego \"Añadir a pantalla de inicio\".",
+      "generic": "Abrí el menú de tu navegador y buscá la opción \"Instalar app\" o \"Añadir a pantalla de inicio\".",
+      "requirementsNote": "\n\nNota: el botón de instalación puede no estar disponible si la app no cumple los requisitos de PWA (service worker, manifest válido, etc.).",
+      "title": "Instalar Swiish"
+    }
+  },
+  "editor": {
+    "editing": "Editando: {{slug}}",
+    "uploadFailed": "Error al subir el archivo",
+    "uploadError": "Error de carga",
+    "lockedByOrg": "Bloqueado por la organización",
+    "tabs": {
+      "details": "Detalles",
+      "links": "Enlaces",
+      "images": "Imágenes",
+      "style": "Estilo",
+      "privacy": "Privacidad"
+    },
+    "fields": {
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "jobTitle": "Puesto",
+      "organisation": "Organización",
+      "organisationPlaceholder": "Nombre de la organización",
+      "organisationNote": "El nombre de la organización lo define tu organización",
+      "location": "Ubicación",
+      "bio": "Biografía",
+      "phone": "Teléfono",
+      "website": "Sitio web"
+    },
+    "links": {
+      "customLinks": "Enlaces personalizados",
+      "addLink": "Agregar enlace",
+      "locked": "Bloqueado",
+      "lockedMessage": "Tu organización deshabilitó los enlaces personalizados. Contactá a tu administrador para habilitar esta función.",
+      "noLinksYet": "Todavía no hay enlaces personalizados.",
+      "dragReorder": "Arrastrar para reordenar",
+      "moveUp": "Mover enlace arriba",
+      "moveDown": "Mover enlace abajo",
+      "removeLink": "Eliminar enlace",
+      "linkTitlePlaceholder": "Título del enlace (ej. Descargar CV)"
+    },
+    "images": {
+      "uploadingImage": "Subiendo imagen...",
+      "profilePicture": "Foto de perfil",
+      "headerBanner": "Banner de cabecera",
+      "lockedMessage": "Tu organización deshabilitó la carga de imágenes personalizadas. Contactá a tu administrador para habilitar esta función.",
+      "upload": "Subir",
+      "remove": "Eliminar"
+    },
+    "style": {
+      "lockedMessage": "Tu organización deshabilitó la personalización del color del tema. Tu tarjeta usará el color de tema predeterminado."
+    },
+    "privacy": {
+      "lockedMessage": "Tu organización deshabilitó la personalización de privacidad. La configuración de privacidad la controla tu organización.",
+      "requireInteractionLabel": "Requerir interacción",
+      "requireInteractionDesc": "Exige que los usuarios hagan clic en un botón para mostrar el email y el teléfono. Evita que bots básicos vean los datos de contacto en la carga inicial de la página.",
+      "obfuscationLabel": "Ofuscación del lado del cliente",
+      "obfuscationDesc": "Codifica el email y el teléfono en el HTML para dificultar el scraping. Nota: scrapers avanzados igual pueden decodificarlo.",
+      "blockRobotsLabel": "Bloquear motores de búsqueda",
+      "blockRobotsDesc": "Agrega la etiqueta meta robots para evitar que los motores de búsqueda indexen esta tarjeta."
+    }
+  }
+}
