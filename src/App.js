@@ -602,7 +602,7 @@ function LanguageToggle({ variant = 'default' }) {
         aria-pressed={i18n.language === 'en'}
         className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-colors ${i18n.language === 'en' ? activeClass : 'opacity-50 hover:opacity-80'}`}
       >
-        <span role="img" aria-label="English">🇬🇧</span>
+        <span role="img" aria-label="English">EN</span>
       </button>
     </div>
   );
@@ -2031,7 +2031,7 @@ const [settings, setSettings] = useState({
                                 </div>
                                 <div className="flex items-center justify-center gap-2 w-full mt-auto">
                                   <a 
-                                    href={card.shortCode ? `/${card.shortCode}` : (card.orgSlug && card.slug ? `/${card.orgSlug}/${card.slug}` : `/${card.slug}`)} 
+                                    href={card.orgSlug && card.slug ? `/${card.orgSlug}/${card.slug}` : (card.slug ? `/${card.slug}` : `/${card.shortCode}`)} 
                                     target="_blank" 
                                     rel="noreferrer" 
                                     className="flex-1 py-2 text-xs font-medium text-confirm-text dark:text-confirm-text-dark bg-confirm dark:bg-confirm-dark rounded-button hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark flex items-center justify-center gap-1"
@@ -2990,11 +2990,11 @@ END:VCARD`;
       </div>
 
       <div className="px-6 pb-6 -mt-16 relative flex-1 flex flex-col min-h-0">
-        <div className="w-32 h-32 min-h-[8rem] flex-shrink-0 rounded-full border-avatar border-white dark:border-card-dark shadow-xl overflow-hidden bg-card dark:bg-card-dark relative mb-4">
+        <div className="w-32 h-32 min-h-[8rem] flex-shrink-0 rounded-full border-avatar border-white dark:border-card-dark shadow-xl overflow-hidden bg-card dark:bg-card-dark relative mb-4 mx-auto">
           {images.avatar ? <img src={images.avatar} className="w-full h-full object-cover" alt="avatar" /> : <div className="w-full h-full bg-surface dark:bg-surface-dark flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark"><User className="w-12 h-12" /></div>}
         </div>
 
-        <div className="space-y-1 mb-8">
+        <div className="space-y-1 mb-8 text-center">
           <h1 className="text-3xl font-bold text-text-primary dark:text-text-primary-dark tracking-tight">{sanitizeText(`${personal.firstName || ''} ${personal.lastName || ''}`).trim() || t('card.untitled')}</h1>
           {(() => {
             const color = settings?.theme_colors?.find(c => c.name === theme.color);
@@ -3004,8 +3004,8 @@ END:VCARD`;
             }
             return <div className="text-lg font-medium" style={{ color: getTextColor(theme.color, settings) }}>{title}</div>;
           })()}
-          <div className="flex items-center text-text-muted dark:text-text-muted-dark text-sm gap-2"><Briefcase className="w-4 h-4" /><span>{sanitizeText(personal.company || '')}</span></div>
-          {personal.location && <div className="flex items-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1"><MapPin className="w-4 h-4" /><span>{sanitizeText(personal.location)}</span></div>}
+          <div className="flex items-center justify-center text-text-muted dark:text-text-muted-dark text-sm gap-2"><Briefcase className="w-4 h-4" /><span>{sanitizeText(personal.company || '')}</span></div>
+          {personal.location && <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1"><MapPin className="w-4 h-4" /><span>{sanitizeText(personal.location)}</span></div>}
         </div>
 
         {personal.bio && <div className="mb-8"><p className="text-text-secondary dark:text-text-secondary-dark leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHTML(personal.bio) }}></p></div>}
