@@ -6,7 +6,7 @@ COPY package*.json ./
 COPY tailwind.config.js ./
 COPY postcss.config.js ./
 COPY scripts/ scripts/
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 
 COPY public/ public/
 COPY src/ src/
