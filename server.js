@@ -570,40 +570,48 @@ app.use(cookieParser());
 
 // Rate limiting
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5,
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 120,
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const uploadLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // 10 uploads per hour
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5,
   message: 'Too many upload attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const recoveryLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5,
+  message: 'Too many recovery attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 // Additional rate limiters for different endpoint types
 const publicReadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // More lenient for public read operations
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const cardReadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Moderate limit for card reads
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -1258,50 +1266,44 @@ app.post('/api/auth/register', loginLimiter, [
   }
 });
 
-// Get recovery answers status (authenticated) — never returns the answers, only whether they exist
+// Get recovery answers (authenticated) — returns plain text values for pre-fill
 app.get('/api/auth/recovery-status', requireAuth, apiLimiter, (req, res, next) => {
-  db.get('SELECT updated_at FROM user_recovery_answers WHERE user_id = ?', [req.user.id], (err, row) => {
+  db.get('SELECT * FROM user_recovery_answers WHERE user_id = ?', [req.user.id], (err, row) => {
     if (err) return next(err);
-    res.json({ configured: !!row, updatedAt: row ? row.updated_at : null });
+    if (!row) return res.json({ configured: false });
+    res.json({
+      configured: true,
+      updatedAt: row.updated_at,
+      birthCity: row.birth_city_hash,
+      motherBirthYear: row.mother_birth_year_hash,
+      primarySchool: row.primary_school_hash
+    });
   });
 });
 
-// Set or update recovery answers (authenticated)
+// Set or update recovery answers (authenticated) — stored as plain text
 app.post('/api/auth/set-recovery-answers', requireAuth, apiLimiter, csrfProtection, [
-  body('dni').notEmpty().withMessage('DNI is required'),
   body('birthCity').notEmpty().withMessage('Birth city is required'),
   body('motherBirthYear').notEmpty().withMessage('Mother birth year is required'),
   body('primarySchool').notEmpty().withMessage('Primary school is required')
-], handleValidationErrors, async (req, res, next) => {
-  try {
-    const { dni, birthCity, motherBirthYear, primarySchool } = req.body;
-    const normalize = (s) => (s || '').toLowerCase().trim();
-
-    const [dniHash, birthCityHash, motherBirthYearHash, primarySchoolHash] = await Promise.all([
-      bcrypt.hash(normalize(dni), 10),
-      bcrypt.hash(normalize(birthCity), 10),
-      bcrypt.hash(normalize(motherBirthYear), 10),
-      bcrypt.hash(normalize(primarySchool), 10)
-    ]);
-
-    db.run(
-      `INSERT INTO user_recovery_answers (user_id, dni_hash, birth_city_hash, mother_birth_year_hash, primary_school_hash)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET
-         dni_hash = excluded.dni_hash,
-         birth_city_hash = excluded.birth_city_hash,
-         mother_birth_year_hash = excluded.mother_birth_year_hash,
-         primary_school_hash = excluded.primary_school_hash,
-         updated_at = CURRENT_TIMESTAMP`,
-      [req.user.id, dniHash, birthCityHash, motherBirthYearHash, primarySchoolHash],
-      (err) => {
-        if (err) return next(err);
-        res.json({ success: true });
-      }
-    );
-  } catch (err) {
-    next(err);
-  }
+], handleValidationErrors, (req, res, next) => {
+  const { dni, birthCity, motherBirthYear, primarySchool } = req.body;
+  const normalize = (s) => (s || '').toLowerCase().trim();
+  db.run(
+    `INSERT INTO user_recovery_answers (user_id, dni_hash, birth_city_hash, mother_birth_year_hash, primary_school_hash)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       dni_hash = excluded.dni_hash,
+       birth_city_hash = excluded.birth_city_hash,
+       mother_birth_year_hash = excluded.mother_birth_year_hash,
+       primary_school_hash = excluded.primary_school_hash,
+       updated_at = CURRENT_TIMESTAMP`,
+    [req.user.id, normalize(dni), normalize(birthCity), normalize(motherBirthYear), normalize(primarySchool)],
+    (err) => {
+      if (err) return next(err);
+      res.json({ success: true });
+    }
+  );
 });
 
 // Change password (authenticated)
@@ -1320,31 +1322,66 @@ app.post('/api/auth/change-password', requireAuth, apiLimiter, csrfProtection, [
       if (!match) return res.status(400).json({ error: 'Current password is incorrect' });
 
       const newHash = await bcrypt.hash(newPassword, 10);
-      db.run('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, req.user.id], (err) => {
-        if (err) return next(err);
-        res.json({ success: true });
-      });
+      db.run(
+        'UPDATE users SET password_hash = ?, password_is_temporary = 0 WHERE id = ?',
+        [newHash, req.user.id],
+        (err) => {
+          if (err) return next(err);
+          res.json({ success: true });
+        }
+      );
     });
   } catch (err) {
     next(err);
   }
 });
 
-// Password recovery — step 1: verify identity, step 2: get temp password
+const VALID_DOCUMENT_TYPES = ['CC', 'CE', 'TI', 'DNI'];
+
+// Password recovery — step 1: verify email + document (returns whether security questions are configured)
 // No CSRF needed: unauthenticated endpoint; loginLimiter prevents abuse
-app.post('/api/auth/recover', loginLimiter, [
+app.post('/api/auth/recover-check', recoveryLimiter, [
   body('email').custom((value) => {
     if (value && (validator.isEmail(value) || /^[^\s@]+@localhost(\.[^\s@]+)?$/.test(value))) {
       return true;
     }
     throw new Error('Valid email required');
   }),
+  body('documentType').isIn(VALID_DOCUMENT_TYPES).withMessage('Invalid document type'),
+  body('documentNumber').matches(/^[0-9]{1,20}$/).withMessage('Invalid document number')
+], handleValidationErrors, (req, res, next) => {
+  const { email, documentType, documentNumber } = req.body;
+  const GENERIC_ERROR = 'Datos incorrectos. Verificá e intentá de nuevo.';
+
+  db.get('SELECT id, document_type, document_number FROM users WHERE email = ?', [email.toLowerCase()], (err, user) => {
+    if (err) return next(err);
+    if (!user || user.document_type !== documentType || user.document_number !== documentNumber) {
+      return res.status(400).json({ error: GENERIC_ERROR });
+    }
+    db.get('SELECT user_id FROM user_recovery_answers WHERE user_id = ?', [user.id], (err, row) => {
+      if (err) return next(err);
+      res.json({ hasQuestions: !!row });
+    });
+  });
+});
+
+// Password recovery — step 2: verify document + security question answer → temp password
+app.post('/api/auth/recover', recoveryLimiter, [
+  body('email').custom((value) => {
+    if (value && (validator.isEmail(value) || /^[^\s@]+@localhost(\.[^\s@]+)?$/.test(value))) {
+      return true;
+    }
+    throw new Error('Valid email required');
+  }),
+  body('documentType').isIn(VALID_DOCUMENT_TYPES).withMessage('Invalid document type'),
+  body('documentNumber').matches(/^[0-9]{1,20}$/).withMessage('Invalid document number'),
   body('questionKey').isIn(['dni', 'birth_city', 'mother_birth_year', 'primary_school']).withMessage('Invalid question'),
   body('answer').notEmpty().withMessage('Answer is required')
 ], handleValidationErrors, async (req, res, next) => {
   try {
-    const { email, questionKey, answer } = req.body;
+    const { email, documentType, documentNumber, questionKey, answer } = req.body;
     const normalizedAnswer = (answer || '').toLowerCase().trim();
+    const GENERIC_ERROR = 'Datos incorrectos. Verificá e intentá de nuevo.';
 
     const columnMap = {
       dni: 'dni_hash',
@@ -1353,34 +1390,94 @@ app.post('/api/auth/recover', loginLimiter, [
       primary_school: 'primary_school_hash'
     };
 
-    db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()], async (err, user) => {
+    db.get('SELECT id, document_type, document_number FROM users WHERE email = ?', [email.toLowerCase()], async (err, user) => {
       if (err) return next(err);
-      // Use same error for unknown email (prevents user enumeration)
-      if (!user) return res.status(400).json({ error: 'Incorrect answer. Please check your details and try again.' });
+      if (!user || user.document_type !== documentType || user.document_number !== documentNumber) {
+        return res.status(400).json({ error: GENERIC_ERROR });
+      }
 
       db.get('SELECT * FROM user_recovery_answers WHERE user_id = ?', [user.id], async (err, row) => {
         if (err) return next(err);
-        if (!row) return res.status(400).json({ error: 'Incorrect answer. Please check your details and try again.' });
+        if (!row) return res.status(400).json({ error: GENERIC_ERROR });
 
-        const hashColumn = columnMap[questionKey];
-        const storedHash = row[hashColumn];
+        const storedValue = row[columnMap[questionKey]];
+        if (!storedValue || normalizedAnswer !== storedValue) {
+          return res.status(400).json({ error: GENERIC_ERROR });
+        }
 
         try {
-          const match = await bcrypt.compare(normalizedAnswer, storedHash);
-          if (!match) return res.status(400).json({ error: 'Incorrect answer. Please check your details and try again.' });
-
-          // Generate a temporary password
-          const tempPassword = require('crypto').randomBytes(6).toString('hex'); // 12 hex chars
+          const tempPassword = require('crypto').randomBytes(6).toString('hex');
           const tempHash = await bcrypt.hash(tempPassword, 10);
-
-          db.run('UPDATE users SET password_hash = ? WHERE id = ?', [tempHash, user.id], (err) => {
-            if (err) return next(err);
-            res.json({ tempPassword });
-          });
+          db.run(
+            'UPDATE users SET password_hash = ?, password_is_temporary = 1 WHERE id = ?',
+            [tempHash, user.id],
+            (err) => {
+              if (err) return next(err);
+              res.json({ tempPassword });
+            }
+          );
         } catch (err) {
           return next(err);
         }
       });
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Password recovery — alternative: verify document + set up security questions → temp password
+// Used when user never configured questions (skipped during registration) or via the help flow
+app.post('/api/auth/recover-setup-questions', recoveryLimiter, [
+  body('email').custom((value) => {
+    if (value && (validator.isEmail(value) || /^[^\s@]+@localhost(\.[^\s@]+)?$/.test(value))) {
+      return true;
+    }
+    throw new Error('Valid email required');
+  }),
+  body('documentType').isIn(VALID_DOCUMENT_TYPES).withMessage('Invalid document type'),
+  body('documentNumber').matches(/^[0-9]{1,20}$/).withMessage('Invalid document number'),
+  body('dni').notEmpty().withMessage('DNI answer required'),
+  body('birthCity').notEmpty().withMessage('Birth city required'),
+  body('motherBirthYear').notEmpty().withMessage('Mother birth year required'),
+  body('primarySchool').notEmpty().withMessage('Primary school required')
+], handleValidationErrors, async (req, res, next) => {
+  try {
+    const { email, documentType, documentNumber, dni, birthCity, motherBirthYear, primarySchool } = req.body;
+    const GENERIC_ERROR = 'Datos incorrectos. Verificá e intentá de nuevo.';
+
+    db.get('SELECT id, document_type, document_number FROM users WHERE email = ?', [email.toLowerCase()], async (err, user) => {
+      if (err) return next(err);
+      if (!user || user.document_type !== documentType || user.document_number !== documentNumber) {
+        return res.status(400).json({ error: GENERIC_ERROR });
+      }
+
+      const normalize = (s) => (s || '').toLowerCase().trim();
+      db.run(
+        `INSERT INTO user_recovery_answers (user_id, dni_hash, birth_city_hash, mother_birth_year_hash, primary_school_hash)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET
+           dni_hash = excluded.dni_hash,
+           birth_city_hash = excluded.birth_city_hash,
+           mother_birth_year_hash = excluded.mother_birth_year_hash,
+           primary_school_hash = excluded.primary_school_hash`,
+        [user.id, normalize(dni), normalize(birthCity), normalize(motherBirthYear), normalize(primarySchool)],
+        async (err) => {
+          if (err) return next(err);
+          try {
+            const tempPassword = require('crypto').randomBytes(6).toString('hex');
+            const tempHash = await bcrypt.hash(tempPassword, 10);
+            db.run(
+              'UPDATE users SET password_hash = ?, password_is_temporary = 1 WHERE id = ?',
+              [tempHash, user.id],
+              (err) => {
+                if (err) return next(err);
+                res.json({ tempPassword });
+              }
+            );
+          } catch (err) { next(err); }
+        }
+      );
     });
   } catch (err) {
     next(err);
@@ -1456,7 +1553,8 @@ app.get('/api/auth/me', requireAuth, apiLimiter, (req, res, next) => {
   }
   
   db.get(
-    `SELECT u.id, u.email, u.organisation_id, u.role, u.email_verified, o.slug as org_slug
+    `SELECT u.id, u.email, u.organisation_id, u.role, u.email_verified, u.password_is_temporary,
+            u.document_type, u.document_number, o.slug as org_slug
      FROM users u LEFT JOIN organisations o ON u.organisation_id = o.id
      WHERE u.id = ?`,
     [req.user.id],
@@ -1471,8 +1569,28 @@ app.get('/api/auth/me', requireAuth, apiLimiter, (req, res, next) => {
         organisationId: user.organisation_id,
         role: user.role,
         emailVerified: user.email_verified === 1,
-        orgSlug: user.org_slug || null
+        orgSlug: user.org_slug || null,
+        passwordIsTemporary: user.password_is_temporary === 1,
+        documentType: user.document_type || null,
+        documentNumber: user.document_number || null
       });
+    }
+  );
+});
+
+// Update user profile (document type + number)
+app.post('/api/auth/update-profile', requireAuth, apiLimiter, csrfProtection, [
+  body('documentType').optional({ nullable: true }).isIn(VALID_DOCUMENT_TYPES).withMessage('Invalid document type'),
+  body('documentNumber').optional({ nullable: true }).matches(/^[0-9]{0,20}$/).withMessage('Document number must contain only digits (max 20)')
+], handleValidationErrors, (req, res, next) => {
+  const documentType = req.body.documentType || null;
+  const documentNumber = req.body.documentNumber || null;
+  db.run(
+    'UPDATE users SET document_type = ?, document_number = ? WHERE id = ?',
+    [documentType, documentNumber, req.user.id],
+    (err) => {
+      if (err) return next(err);
+      res.json({ success: true });
     }
   );
 });
@@ -3627,9 +3745,9 @@ app.post('/api/auth/change-password', requireAuth, apiLimiter, csrfProtection, [
     // Hash new password
     const passwordHash = await bcrypt.hash(newPassword, 10);
     
-    // Update password
+    // Update password and clear temporary flag
     db.run(
-      "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      "UPDATE users SET password_hash = ?, password_is_temporary = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
       [passwordHash, req.user.id],
       (err) => {
         if (err) return next(err);

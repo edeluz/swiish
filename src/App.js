@@ -12,7 +12,7 @@ import {
   Plus, Trash2, ArrowLeft, Users, ExternalLink, RefreshCw, UserPlus,
   Download, FileText, Calendar, Video, Music, ShoppingCart, 
   Link as LinkIcon, Youtube, Facebook, MessageCircle, Sun, Moon,
-  ChevronUp, ChevronDown, GripVertical, Settings
+  ChevronUp, ChevronDown, GripVertical, Settings, Copy
 } from 'lucide-react';
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -81,6 +81,10 @@ const applyThemeCssVars = (variant) => {
   root.style.setProperty('--texture-main-opacity-light', textures.opacityLight ?? 0.08);
   root.style.setProperty('--texture-main-opacity-dark', textures.opacityDark ?? 0.1);
 };
+
+// Apply default theme immediately so CSS variables are set for unauthenticated pages
+// (login, register, recover). fetchSettings will override with the org theme after auth.
+applyThemeCssVars('swiish');
 
 // --- QR PAYLOAD STORAGE KEYS ---
 const QR_STORAGE_KEY = 'swiish:lastQrPayload';
@@ -609,12 +613,23 @@ function LanguageToggle({ variant = 'default' }) {
   );
 }
 
-function RecoveryAnswersForm({ onSubmit, onSkip, submitLabel, loading, error, success, configured }) {
+function RecoveryAnswersForm({ onSubmit, onSkip, submitLabel, loading, error, success, configured, hideDni, prefillDni, initialValues }) {
   const { t } = useTranslation();
-  const [dni, setDni] = React.useState('');
+  const [dni, setDni] = React.useState(prefillDni || '');
   const [birthCity, setBirthCity] = React.useState('');
   const [motherBirthYear, setMotherBirthYear] = React.useState('');
   const [primarySchool, setPrimarySchool] = React.useState('');
+
+  React.useEffect(() => {
+    if (prefillDni) setDni(prefillDni);
+  }, [prefillDni]);
+
+  React.useEffect(() => {
+    if (!initialValues) return;
+    if (initialValues.birthCity) setBirthCity(initialValues.birthCity);
+    if (initialValues.motherBirthYear) setMotherBirthYear(initialValues.motherBirthYear);
+    if (initialValues.primarySchool) setPrimarySchool(initialValues.primarySchool);
+  }, [initialValues]);
 
   const inputCls = "w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark";
 
@@ -660,10 +675,10 @@ function RecoveryAnswersForm({ onSubmit, onSkip, submitLabel, loading, error, su
           <p className="text-xs text-text-muted dark:text-text-muted-dark">{t('account.recoveryNotConfigured')}</p>
         </div>
       )}
-      <input type="text" value={dni} onChange={e => setDni(e.target.value.toLowerCase())} placeholder={t('auth.recovery.dni')} className={inputCls} required />
-      <input type="text" value={birthCity} onChange={e => setBirthCity(e.target.value.toLowerCase())} placeholder={t('auth.recovery.birthCity')} className={inputCls} required />
-      <input type="text" value={motherBirthYear} onChange={e => setMotherBirthYear(e.target.value.toLowerCase())} placeholder={t('auth.recovery.motherBirthYear')} className={inputCls} required />
-      <input type="text" value={primarySchool} onChange={e => setPrimarySchool(e.target.value.toLowerCase())} placeholder={t('auth.recovery.primarySchool')} className={inputCls} required />
+      {!hideDni && <input type="text" value={dni} onChange={e => setDni(e.target.value)} placeholder={t('auth.recovery.dni')} className={inputCls} required />}
+      <input type="text" value={birthCity} onChange={e => setBirthCity(e.target.value)} placeholder={t('auth.recovery.birthCity')} className={inputCls} required />
+      <input type="text" value={motherBirthYear} onChange={e => setMotherBirthYear(e.target.value)} placeholder={t('auth.recovery.motherBirthYear')} className={inputCls} required />
+      <input type="text" value={primarySchool} onChange={e => setPrimarySchool(e.target.value)} placeholder={t('auth.recovery.primarySchool')} className={inputCls} required />
       {configured && <p className="text-xs text-text-muted dark:text-text-muted-dark">{t('account.recoveryUpdateHint')}</p>}
       {error && <p className="text-sm text-error-text dark:text-error-text-dark">{error}</p>}
       <div className="flex gap-3 pt-1">
@@ -680,7 +695,7 @@ function RecoveryAnswersForm({ onSubmit, onSkip, submitLabel, loading, error, su
   );
 }
 
-function ChangePasswordForm({ onSubmit, error, success }) {
+function ChangePasswordForm({ onSubmit, error, success, isTemporary, tempPasswordHint }) {
   const { t } = useTranslation();
   const [current, setCurrent] = React.useState('');
   const [next, setNext] = React.useState('');
@@ -709,6 +724,18 @@ function ChangePasswordForm({ onSubmit, error, success }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {isTemporary && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-card px-4 py-3 text-sm">
+          <p className="font-semibold text-amber-800 dark:text-amber-300 mb-1">{t('account.tempPasswordBanner')}</p>
+          {tempPasswordHint ? (
+            <p className="text-amber-700 dark:text-amber-400">
+              {t('account.tempPasswordValue')} <span className="font-mono font-bold tracking-widest">{tempPasswordHint}</span>
+            </p>
+          ) : (
+            <p className="text-amber-700 dark:text-amber-400">{t('account.tempPasswordCurrentHint')}</p>
+          )}
+        </div>
+      )}
       <input type="password" value={current} onChange={e => setCurrent(e.target.value)} placeholder={t('account.currentPassword')} className={inputCls} required />
       <input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder={t('account.newPassword')} className={inputCls} required minLength={8} />
       <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t('auth.confirmPassword')} className={inputCls} required />
@@ -825,15 +852,28 @@ export default function App() {
   const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
   const [registerError, setRegisterError] = useState('');
   const [recoverEmail, setRecoverEmail] = useState('');
-  const [recoverQuestionKey, setRecoverQuestionKey] = useState('dni');
+  const [recoverStep, setRecoverStep] = useState(1); // 1 | 2 | 'help'
+  const [recoverHasQuestions, setRecoverHasQuestions] = useState(false);
+  const [recoverDocType, setRecoverDocType] = useState('CC');
+  const [recoverDocNumber, setRecoverDocNumber] = useState('');
+  const [recoverQuestionKey, setRecoverQuestionKey] = useState('birth_city');
   const [recoverAnswer, setRecoverAnswer] = useState('');
   const [recoverError, setRecoverError] = useState('');
   const [recoverTempPassword, setRecoverTempPassword] = useState('');
+  const [passwordIsTemporary, setPasswordIsTemporary] = useState(false);
+  const [tempPasswordHint, setTempPasswordHint] = useState('');
+  const [documentType, setDocumentType] = useState('CC');
+  const [documentNumber, setDocumentNumber] = useState('');
+  const [profileSaveError, setProfileSaveError] = useState('');
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+  const [registerDocStep, setRegisterDocStep] = useState(false); // false=doc form, true=recovery form
+  const [registerDocError, setRegisterDocError] = useState('');
   const [accountPasswordError, setAccountPasswordError] = useState('');
   const [accountPasswordSuccess, setAccountPasswordSuccess] = useState(false);
   const [accountRecoveryError, setAccountRecoveryError] = useState('');
   const [accountRecoverySuccess, setAccountRecoverySuccess] = useState(false);
   const [recoveryConfigured, setRecoveryConfigured] = useState(null); // null=unknown, false=not set, {updatedAt}=set
+  const [recoveryAnswers, setRecoveryAnswers] = useState(null);
   const [modal, setModal] = useState({ isOpen: false, type: 'info', title: '', message: '', onConfirm: null, onClose: null, confirmText: '', cancelText: '' });
   const [createCardModal, setCreateCardModal] = useState({ isOpen: false, slug: '', userId: null });
   const [targetUserIdForNewCard, setTargetUserIdForNewCard] = useState(null);
@@ -1154,13 +1194,20 @@ const [settings, setSettings] = useState({
       setAccountPasswordSuccess(false);
       setAccountRecoveryError('');
       setAccountRecoverySuccess(false);
+      setProfileSaveError('');
+      setProfileSaveSuccess(false);
       setRecoveryConfigured(null);
+      setRecoveryAnswers(null);
       setView('account');
       document.title = "My Account";
       fetchRecoveryStatus();
     } else if (path === '/recover') {
       setRecoverEmail('');
-      setRecoverQuestionKey('dni');
+      setRecoverStep(1);
+      setRecoverHasQuestions(false);
+      setRecoverDocType('CC');
+      setRecoverDocNumber('');
+      setRecoverQuestionKey('birth_city');
       setRecoverAnswer('');
       setRecoverError('');
       setRecoverTempPassword('');
@@ -1235,6 +1282,10 @@ const [settings, setSettings] = useState({
           setView('loading');
           checkAuth().then((authResult) => {
             if (authResult.isAuthenticated) {
+              if (authResult.userData?.passwordIsTemporary) {
+                navigate('/settings/account', { replace: true });
+                return;
+              }
               // Determine view based on role and route
               if (authResult.userData.role === 'member') {
                 setView('admin-dashboard');
@@ -1277,7 +1328,10 @@ const [settings, setSettings] = useState({
         setUserRole(userData.role);
         setCurrentUserId(userData.id);
         setCurrentUserEmail(userData.email);
-        
+        setPasswordIsTemporary(!!userData.passwordIsTemporary);
+        if (userData.documentType) setDocumentType(userData.documentType);
+        if (userData.documentNumber) setDocumentNumber(userData.documentNumber);
+
         // Fetch cards
         const res = await apiCall(`${API_ENDPOINT}/admin/cards`);
         if (res.ok) {
@@ -1289,7 +1343,7 @@ const [settings, setSettings] = useState({
           } else {
             fetchSettings();
           }
-          
+
           return { isAuthenticated: true, userData, cardList: list };
         } else {
           setIsAuthenticated(false);
@@ -1618,15 +1672,20 @@ const [settings, setSettings] = useState({
         await fetchCsrfToken();
         const authResult = await checkAuth();
         if (authResult.isAuthenticated) {
-          // Navigate to dashboard after successful login (explicit user action)
-          navigate('/people');
+          if (authResult.userData?.passwordIsTemporary) {
+            // Preserve temp password hint if we're in the same recovery session
+            if (recoverTempPassword) setTempPasswordHint(recoverTempPassword);
+            navigate('/settings/account');
+          } else {
+            navigate('/people');
+          }
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
         setError(errorData.error || 'Invalid email or password');
       }
-    } catch (e) { 
-      setError('Login failed'); 
+    } catch (e) {
+      setError('Login failed');
     }
   };
 
@@ -1647,7 +1706,11 @@ const [settings, setSettings] = useState({
       if (res.ok) {
         await fetchCsrfToken();
         await checkAuth();
-        // Show optional recovery setup step before going to dashboard
+        // Show document step first, then recovery setup
+        setRegisterDocStep(false);
+        setRegisterDocError('');
+        setDocumentType('CC');
+        setDocumentNumber('');
         setView('register-recovery');
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -1658,16 +1721,38 @@ const [settings, setSettings] = useState({
     }
   };
 
-  const handleRecover = async (e) => {
+  const handleRecoverStep1 = async (e) => {
     e.preventDefault();
     setRecoverError('');
-    setRecoverTempPassword('');
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/recover-check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: recoverEmail.toLowerCase().trim(), documentType: recoverDocType, documentNumber: recoverDocNumber.trim() })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRecoverHasQuestions(data.hasQuestions);
+        setRecoverStep(data.hasQuestions ? 2 : 'help');
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setRecoverError(errorData.error || t('auth.recoverDocIncorrect'));
+      }
+    } catch {
+      setRecoverError(t('common.error'));
+    }
+  };
+
+  const handleRecoverStep2 = async (e) => {
+    e.preventDefault();
+    setRecoverError('');
     try {
       const res = await fetch(`${API_ENDPOINT}/auth/recover`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email: recoverEmail.toLowerCase().trim(), questionKey: recoverQuestionKey, answer: recoverAnswer.trim() })
+        body: JSON.stringify({ email: recoverEmail.toLowerCase().trim(), documentType: recoverDocType, documentNumber: recoverDocNumber.trim(), questionKey: recoverQuestionKey, answer: recoverAnswer.trim() })
       });
       if (res.ok) {
         const data = await res.json();
@@ -1676,8 +1761,29 @@ const [settings, setSettings] = useState({
         const errorData = await res.json().catch(() => ({}));
         setRecoverError(errorData.error || t('auth.recoverFailed'));
       }
-    } catch (e) {
+    } catch {
       setRecoverError(t('auth.recoverFailed'));
+    }
+  };
+
+  const handleRecoverSetupForRecover = async ({ dni, birthCity, motherBirthYear, primarySchool }) => {
+    setRecoverError('');
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/recover-setup-questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: recoverEmail.toLowerCase().trim(), documentType: recoverDocType, documentNumber: recoverDocNumber.trim(), dni, birthCity, motherBirthYear, primarySchool })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRecoverTempPassword(data.tempPassword);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setRecoverError(errorData.error || t('common.error'));
+      }
+    } catch {
+      setRecoverError(t('common.error'));
     }
   };
 
@@ -1686,7 +1792,13 @@ const [settings, setSettings] = useState({
       const res = await fetch(`${API_ENDPOINT}/auth/recovery-status`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setRecoveryConfigured(data.configured ? { updatedAt: data.updatedAt } : false);
+        if (data.configured) {
+          setRecoveryConfigured({ updatedAt: data.updatedAt });
+          setRecoveryAnswers({ birthCity: data.birthCity, motherBirthYear: data.motherBirthYear, primarySchool: data.primarySchool });
+        } else {
+          setRecoveryConfigured(false);
+          setRecoveryAnswers(null);
+        }
       }
     } catch {
       // Non-critical — leave as null
@@ -1715,6 +1827,48 @@ const [settings, setSettings] = useState({
     }
   };
 
+  const handleRegisterSaveDocument = async (e) => {
+    e.preventDefault();
+    setRegisterDocError('');
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/update-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        credentials: 'include',
+        body: JSON.stringify({ documentType, documentNumber })
+      });
+      if (res.ok) {
+        setRegisterDocStep(true);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setRegisterDocError(d.error || t('common.error'));
+      }
+    } catch {
+      setRegisterDocError(t('common.error'));
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setProfileSaveError('');
+    setProfileSaveSuccess(false);
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/update-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        credentials: 'include',
+        body: JSON.stringify({ documentType, documentNumber: documentNumber || null })
+      });
+      if (res.ok) {
+        setProfileSaveSuccess(true);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setProfileSaveError(d.error || t('common.error'));
+      }
+    } catch {
+      setProfileSaveError(t('common.error'));
+    }
+  };
+
   const handleChangePassword = async ({ currentPassword, newPassword }) => {
     setAccountPasswordError('');
     setAccountPasswordSuccess(false);
@@ -1727,6 +1881,14 @@ const [settings, setSettings] = useState({
       });
       if (res.ok) {
         setAccountPasswordSuccess(true);
+        if (passwordIsTemporary) {
+          setPasswordIsTemporary(false);
+          setTempPasswordHint('');
+          navigate('/people');
+          return;
+        }
+        setPasswordIsTemporary(false);
+        setTempPasswordHint('');
       } else {
         const d = await res.json().catch(() => ({}));
         setAccountPasswordError(d.error || t('common.error'));
@@ -2186,13 +2348,18 @@ const [settings, setSettings] = useState({
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('admin.emailPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus />
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('admin.passwordPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" />
                 {error && <div className="flex items-center gap-2 text-error-text dark:text-error-text-dark text-sm">{error}</div>}
-                <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">{t('admin.loginTitle')}</button>
+                <button
+                  type="submit"
+                  className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors"
+                  >
+                    {t('admin.loginTitle')}
+                </button>
               </form>
               <div className="mt-6 pt-6 border-t border-border dark:border-border-dark text-center space-y-3">
                 <p className="text-sm text-text-muted dark:text-text-muted-dark">{t('auth.noAccount')}</p>
                 <button
                   onClick={() => navigate('/register')}
-                  className="w-full py-3 rounded-full border-2 border-confirm dark:border-confirm-dark text-confirm-text dark:text-confirm-text-dark font-semibold hover:bg-confirm dark:hover:bg-confirm-dark hover:text-white transition-colors text-sm"
+                  className="w-full py-1 rounded-full border-2 border-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors"
                 >
                   {t('auth.signUp')}
                 </button>
@@ -2247,21 +2414,69 @@ const [settings, setSettings] = useState({
         <>
           <div className="min-h-screen bg-surface dark:bg-main-dark flex items-center justify-center p-4">
             <div className="bg-card dark:bg-card-dark max-w-sm w-full rounded-page shadow-xl p-8">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400"><Lock className="w-8 h-8" /></div>
-                <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverySetupTitle')}</h1>
-                <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{t('auth.recoverySetupSubtitle')}</p>
-              </div>
-              <RecoveryAnswersForm
-                onSubmit={async (answers) => {
-                  await handleSetRecoveryAnswers(answers);
-                  navigate('/people');
-                }}
-                onSkip={() => navigate('/people')}
-                submitLabel={t('auth.recoverySetupSave')}
-                error={accountRecoveryError}
-                success={accountRecoverySuccess}
-              />
+              {!registerDocStep ? (
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400"><User className="w-8 h-8" /></div>
+                    <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.docStepTitle')}</h1>
+                    <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{t('auth.docStepSubtitle')}</p>
+                  </div>
+                  <form onSubmit={handleRegisterSaveDocument} className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-text-muted dark:text-text-muted-dark mb-1 uppercase tracking-wide">{t('account.documentType')}</label>
+                      <select
+                        value={documentType}
+                        onChange={e => setDocumentType(e.target.value)}
+                        className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark"
+                      >
+                        <option value="CC">CC — Cédula de Ciudadanía</option>
+                        <option value="CE">CE — Cédula de Extranjería</option>
+                        <option value="TI">TI — Tarjeta de Identidad</option>
+                        <option value="DNI">DNI — Documento Nacional de Identidad</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-text-muted dark:text-text-muted-dark mb-1 uppercase tracking-wide">{t('account.documentNumber')}</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={documentNumber}
+                        onChange={e => setDocumentNumber(e.target.value.replace(/\D/g, ''))}
+                        placeholder={t('account.documentNumberPlaceholder')}
+                        maxLength={20}
+                        required
+                        autoFocus
+                        className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark font-mono"
+                      />
+                    </div>
+                    {registerDocError && <p className="text-sm text-error-text dark:text-error-text-dark">{registerDocError}</p>}
+                    <button type="submit" disabled={!documentNumber.trim()} className="w-full py-3.5 rounded-full bg-action dark:bg-action-dark text-white font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                      {t('auth.docStepContinue')}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400"><Lock className="w-8 h-8" /></div>
+                    <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverySetupTitle')}</h1>
+                    <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{t('auth.recoverySetupSubtitle')}</p>
+                  </div>
+                  <RecoveryAnswersForm
+                    onSubmit={async (answers) => {
+                      await handleSetRecoveryAnswers(answers);
+                      navigate('/people');
+                    }}
+                    onSkip={() => navigate('/people')}
+                    submitLabel={t('auth.recoverySetupSave')}
+                    error={accountRecoveryError}
+                    success={accountRecoverySuccess}
+                    hideDni={true}
+                    prefillDni={documentNumber}
+                  />
+                </>
+              )}
             </div>
           </div>
           <VersionBadge />
@@ -2271,37 +2486,103 @@ const [settings, setSettings] = useState({
         <>
           <div className="min-h-screen bg-surface dark:bg-main-dark flex items-center justify-center p-4">
             <div className="bg-card dark:bg-card-dark max-w-sm w-full rounded-page shadow-xl p-8">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400"><Lock className="w-8 h-8" /></div>
-                <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverTitle')}</h1>
-                <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{t('auth.recoverSubtitle')}</p>
-              </div>
               {recoverTempPassword ? (
-                <div className="space-y-4">
-                  <div className="bg-confirm/10 dark:bg-confirm-dark/10 border border-confirm dark:border-confirm-dark rounded-card p-4 text-center">
-                    <p className="text-sm text-text-secondary dark:text-text-muted-dark mb-2">{t('auth.recoverTempLabel')}</p>
-                    <p className="text-xl font-mono font-bold text-text-primary dark:text-text-primary-dark tracking-widest">{recoverTempPassword}</p>
-                    <p className="text-xs text-text-muted dark:text-text-muted-dark mt-2">{t('auth.recoverTempHint')}</p>
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-confirm/10 dark:bg-confirm-dark/10 rounded-full flex items-center justify-center mx-auto mb-4 text-confirm-text dark:text-confirm-text-dark"><Check className="w-8 h-8" /></div>
+                    <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverTitle')}</h1>
                   </div>
-                  <button onClick={() => navigate('/login')} className="w-full py-3.5 rounded-full bg-action dark:bg-action-dark text-white font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark transition-colors">{t('auth.signIn')}</button>
-                </div>
+                  <div className="space-y-4">
+                    <div className="bg-confirm/10 dark:bg-confirm-dark/10 border border-confirm dark:border-confirm-dark rounded-card p-4">
+                      <p className="text-sm text-text-secondary dark:text-text-muted-dark mb-2 text-center">{t('auth.recoverTempLabel')}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xl font-mono font-bold text-text-primary dark:text-text-primary-dark tracking-widest">{recoverTempPassword}</p>
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard.writeText(recoverTempPassword)}
+                          className="p-2 rounded-full hover:bg-confirm/20 dark:hover:bg-confirm-dark/20 text-confirm-text dark:text-confirm-text-dark transition-colors flex-shrink-0"
+                          title="Copiar contraseña"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-text-muted dark:text-text-muted-dark mt-2 text-center">{t('auth.recoverTempHint')}</p>
+                    </div>
+                    <button onClick={() => navigate('/login')} className="w-full py-3.5 rounded-full bg-action dark:bg-action-dark text-white font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark transition-colors">{t('auth.signIn')}</button>
+                  </div>
+                </>
+              ) : recoverStep === 1 ? (
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400"><Lock className="w-8 h-8" /></div>
+                    <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverDocTitle')}</h1>
+                    <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{t('auth.recoverDocSubtitle')}</p>
+                  </div>
+                  <form onSubmit={handleRecoverStep1} className="space-y-3">
+                    <input type="email" value={recoverEmail} onChange={e => setRecoverEmail(e.target.value)} placeholder={t('admin.emailPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus required />
+                    <div>
+                      <label className="block text-xs font-medium text-text-muted dark:text-text-muted-dark mb-1 uppercase tracking-wide">{t('account.documentType')}</label>
+                      <select value={recoverDocType} onChange={e => setRecoverDocType(e.target.value)} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark">
+                        <option value="CC">CC — Cédula de Ciudadanía</option>
+                        <option value="CE">CE — Cédula de Extranjería</option>
+                        <option value="TI">TI — Tarjeta de Identidad</option>
+                        <option value="DNI">DNI — Documento Nacional de Identidad</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-text-muted dark:text-text-muted-dark mb-1 uppercase tracking-wide">{t('account.documentNumber')}</label>
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" value={recoverDocNumber} onChange={e => setRecoverDocNumber(e.target.value.replace(/\D/g, ''))} placeholder={t('account.documentNumberPlaceholder')} maxLength={20} required className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark font-mono" />
+                    </div>
+                    {recoverError && <p className="text-sm text-error-text dark:text-error-text-dark">{recoverError}</p>}
+                    <button type="submit" disabled={!recoverEmail.trim() || !recoverDocNumber.trim()} className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('auth.recoverDocContinue')}</button>
+                  </form>
+                  <p className="text-center text-sm text-text-muted dark:text-text-muted-dark mt-4">
+                    <button onClick={() => navigate('/login')} className="font-medium text-confirm-text dark:text-confirm-text-dark hover:underline">{t('auth.signIn')}</button>
+                  </p>
+                </>
+              ) : recoverStep === 2 ? (
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400"><Lock className="w-8 h-8" /></div>
+                    <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverQuestionTitle')}</h1>
+                    <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{t('auth.recoverQuestionSubtitle')}</p>
+                  </div>
+                  <form onSubmit={handleRecoverStep2} className="space-y-3">
+                    <select value={recoverQuestionKey} onChange={e => { setRecoverQuestionKey(e.target.value); setRecoverAnswer(''); }} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark">
+                      <option value="birth_city">{t('auth.recovery.birthCity')}</option>
+                      <option value="mother_birth_year">{t('auth.recovery.motherBirthYear')}</option>
+                      <option value="primary_school">{t('auth.recovery.primarySchool')}</option>
+                    </select>
+                    <input type="text" value={recoverAnswer} onChange={e => setRecoverAnswer(e.target.value.toLowerCase())} placeholder={t('auth.recoverAnswerPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus required />
+                    {recoverError && <p className="text-sm text-error-text dark:text-error-text-dark">{recoverError}</p>}
+                    <button type="submit" disabled={!recoverAnswer.trim()} className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('auth.recoverSubmit')}</button>
+                  </form>
+                  <p className="text-center text-sm text-text-muted dark:text-text-muted-dark mt-4">
+                    <button onClick={() => { setRecoverStep('help'); setRecoverError(''); }} className="font-medium text-amber-600 dark:text-amber-400 hover:underline">{t('auth.recoverHelpLink')}</button>
+                  </p>
+                  <p className="text-center text-sm text-text-muted dark:text-text-muted-dark mt-2">
+                    <button onClick={() => navigate('/login')} className="font-medium text-confirm-text dark:text-confirm-text-dark hover:underline">{t('auth.signIn')}</button>
+                  </p>
+                </>
               ) : (
-                <form onSubmit={handleRecover} className="space-y-4">
-                  <input type="email" value={recoverEmail} onChange={e => setRecoverEmail(e.target.value)} placeholder={t('admin.emailPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus required />
-                  <select value={recoverQuestionKey} onChange={e => { setRecoverQuestionKey(e.target.value); setRecoverAnswer(''); }} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark">
-                    <option value="dni">{t('auth.recovery.dni')}</option>
-                    <option value="birth_city">{t('auth.recovery.birthCity')}</option>
-                    <option value="mother_birth_year">{t('auth.recovery.motherBirthYear')}</option>
-                    <option value="primary_school">{t('auth.recovery.primarySchool')}</option>
-                  </select>
-                  <input type="text" value={recoverAnswer} onChange={e => setRecoverAnswer(e.target.value.toLowerCase())} placeholder={t('auth.recoverAnswerPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" required />
-                  {recoverError && <div className="text-error-text dark:text-error-text-dark text-sm">{recoverError}</div>}
-                  <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">{t('auth.recoverSubmit')}</button>
-                </form>
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400"><Lock className="w-8 h-8" /></div>
+                    <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverSetupTitle')}</h1>
+                    <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{recoverHasQuestions ? t('auth.recoverSetupHelpSubtitle') : t('auth.recoverSetupNoQuestionsSubtitle')}</p>
+                  </div>
+                  {recoverError && <p className="text-sm text-error-text dark:text-error-text-dark mb-3">{recoverError}</p>}
+                  <RecoveryAnswersForm
+                    onSubmit={handleRecoverSetupForRecover}
+                    submitLabel={t('auth.recoverSetupSave')}
+                    hideDni={true}
+                    prefillDni={recoverDocNumber}
+                  />
+                  <p className="text-center text-sm text-text-muted dark:text-text-muted-dark mt-4">
+                    <button onClick={() => navigate('/login')} className="font-medium text-confirm-text dark:text-confirm-text-dark hover:underline">{t('auth.signIn')}</button>
+                  </p>
+                </>
               )}
-              <p className="text-center text-sm text-text-muted dark:text-text-muted-dark mt-4">
-                <button onClick={() => navigate('/login')} className="font-medium text-confirm-text dark:text-confirm-text-dark hover:underline">{t('auth.signIn')}</button>
-              </p>
               <div className="text-center mt-6">
                 <div className="flex justify-center">
                   <img src="/graphics/Swiish_Logo.svg" alt="Swiish" className="h-4 w-auto dark:hidden swiish-logo" />
@@ -2328,6 +2609,58 @@ const [settings, setSettings] = useState({
               </div>
 
               <div className="space-y-6">
+                {/* Profile info: email + document */}
+                <div className="bg-card dark:bg-card-dark rounded-card border border-border-subtle dark:border-border-dark p-6">
+                  <h2 className="text-base font-semibold text-text-primary dark:text-text-primary-dark mb-1">{t('account.profileTitle')}</h2>
+                  <p className="text-sm text-text-muted dark:text-text-muted-dark mb-5">{t('account.profileDesc')}</p>
+                  <div className="space-y-3">
+                    {/* Email — read only */}
+                    <div>
+                      <label className="block text-xs font-medium text-text-muted dark:text-text-muted-dark mb-1 uppercase tracking-wide">{t('account.emailLabel')}</label>
+                      <div className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-text-muted dark:text-text-muted-dark text-sm select-all">
+                        {currentUserEmail}
+                      </div>
+                    </div>
+                    {/* Document type + number */}
+                    <div>
+                      <label className="block text-xs font-medium text-text-muted dark:text-text-muted-dark mb-1 uppercase tracking-wide">{t('account.documentType')}</label>
+                      <select
+                        value={documentType}
+                        onChange={e => { setDocumentType(e.target.value); setProfileSaveSuccess(false); }}
+                        className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark"
+                      >
+                        <option value="CC">CC — Cédula de Ciudadanía</option>
+                        <option value="CE">CE — Cédula de Extranjería</option>
+                        <option value="TI">TI — Tarjeta de Identidad</option>
+                        <option value="DNI">DNI — Documento Nacional de Identidad</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-text-muted dark:text-text-muted-dark mb-1 uppercase tracking-wide">{t('account.documentNumber')}</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={documentNumber}
+                        onChange={e => { setDocumentNumber(e.target.value.replace(/\D/g, '')); setProfileSaveSuccess(false); }}
+                        placeholder={t('account.documentNumberPlaceholder')}
+                        maxLength={20}
+                        className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark font-mono"
+                      />
+                    </div>
+                    {profileSaveError && <p className="text-sm text-error-text dark:text-error-text-dark">{profileSaveError}</p>}
+                    {profileSaveSuccess ? (
+                      <div className="flex items-center gap-2 text-confirm-text dark:text-confirm-text-dark text-sm font-medium">
+                        <Check className="w-4 h-4" /> {t('account.profileSaved')}
+                      </div>
+                    ) : (
+                      <button onClick={handleSaveProfile} className="w-full py-3 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors text-sm">
+                        {t('account.saveProfile')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="bg-card dark:bg-card-dark rounded-card border border-border-subtle dark:border-border-dark p-6">
                   <h2 className="text-base font-semibold text-text-primary dark:text-text-primary-dark mb-1">{t('account.changePasswordTitle')}</h2>
                   <p className="text-sm text-text-muted dark:text-text-muted-dark mb-5">{t('account.changePasswordDesc')}</p>
@@ -2335,6 +2668,8 @@ const [settings, setSettings] = useState({
                     onSubmit={handleChangePassword}
                     error={accountPasswordError}
                     success={accountPasswordSuccess}
+                    isTemporary={passwordIsTemporary}
+                    tempPasswordHint={tempPasswordHint}
                   />
                 </div>
 
@@ -2347,6 +2682,9 @@ const [settings, setSettings] = useState({
                     error={accountRecoveryError}
                     success={accountRecoverySuccess}
                     configured={recoveryConfigured}
+                    hideDni={true}
+                    prefillDni={documentNumber}
+                    initialValues={recoveryAnswers}
                   />
                 </div>
               </div>
