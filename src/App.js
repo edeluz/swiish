@@ -8,7 +8,7 @@ import flags from 'country-flag-icons/react/3x2';
 import { 
   Camera, Upload, Save, Share2, Phone, Mail, Globe, 
   Linkedin, Twitter, Instagram, Github, Edit3, Eye, 
-  X, Check, User, MapPin, Briefcase, Lock, LogIn, AlertCircle,
+  X, Check, User, MapPin, Briefcase, Building2, Lock, LogIn, AlertCircle,
   Plus, Trash2, ArrowLeft, Users, ExternalLink, RefreshCw, UserPlus,
   Download, FileText, Calendar, Video, Music, ShoppingCart, 
   Link as LinkIcon, Youtube, Facebook, MessageCircle, Sun, Moon,
@@ -191,12 +191,13 @@ const ICON_MAP = {
 // --- DATA TEMPLATE ---
 const getDefaultTemplate = (settings) => ({
   personal: {
-    firstName: "New",
-    lastName: "User",
-    title: "Role Title",
-    company: settings?.default_organisation || "My Organisation",
-    bio: "Welcome to the team.",
-    location: "London, UK"
+    firstName: "",
+    lastName: "",
+    title: "",
+    company: settings?.default_organisation || "",
+    bio: "",
+    location: "",
+    occupation: ""
   },
   contact: {
     email: "",
@@ -608,6 +609,192 @@ function LanguageToggle({ variant = 'default' }) {
   );
 }
 
+function RecoveryAnswersForm({ onSubmit, onSkip, submitLabel, loading, error, success, configured }) {
+  const { t } = useTranslation();
+  const [dni, setDni] = React.useState('');
+  const [birthCity, setBirthCity] = React.useState('');
+  const [motherBirthYear, setMotherBirthYear] = React.useState('');
+  const [primarySchool, setPrimarySchool] = React.useState('');
+
+  const inputCls = "w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark";
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit({ dni: dni.trim(), birthCity: birthCity.trim(), motherBirthYear: motherBirthYear.trim(), primarySchool: primarySchool.trim() });
+  };
+
+  if (success) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-4 text-center">
+        <div className="w-12 h-12 rounded-full bg-confirm/10 dark:bg-confirm-dark/10 flex items-center justify-center">
+          <Check className="w-6 h-6 text-confirm-text dark:text-confirm-text-dark" />
+        </div>
+        <p className="text-sm font-medium text-text-primary dark:text-text-primary-dark">{t('account.recoverySaved')}</p>
+      </div>
+    );
+  }
+
+  const formattedDate = configured?.updatedAt
+    ? new Date(configured.updatedAt).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : null;
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {configured === null && (
+        <div className="flex items-center gap-2 py-2">
+          <div className="w-3 h-3 rounded-full border-2 border-text-muted dark:border-text-muted-dark border-t-transparent animate-spin" />
+          <span className="text-xs text-text-muted dark:text-text-muted-dark">{t('common.loading')}</span>
+        </div>
+      )}
+      {configured && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-confirm/10 dark:bg-confirm-dark/10 rounded-badge border border-confirm/30 dark:border-confirm-dark/30">
+          <Check className="w-4 h-4 text-confirm-text dark:text-confirm-text-dark flex-shrink-0" />
+          <p className="text-xs text-confirm-text dark:text-confirm-text-dark">
+            {t('account.recoveryConfigured')}{formattedDate ? ` · ${formattedDate}` : ''}
+          </p>
+        </div>
+      )}
+      {configured === false && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-surface dark:bg-surface-dark rounded-badge border border-border dark:border-border-dark">
+          <AlertCircle className="w-4 h-4 text-text-muted dark:text-text-muted-dark flex-shrink-0" />
+          <p className="text-xs text-text-muted dark:text-text-muted-dark">{t('account.recoveryNotConfigured')}</p>
+        </div>
+      )}
+      <input type="text" value={dni} onChange={e => setDni(e.target.value.toLowerCase())} placeholder={t('auth.recovery.dni')} className={inputCls} required />
+      <input type="text" value={birthCity} onChange={e => setBirthCity(e.target.value.toLowerCase())} placeholder={t('auth.recovery.birthCity')} className={inputCls} required />
+      <input type="text" value={motherBirthYear} onChange={e => setMotherBirthYear(e.target.value.toLowerCase())} placeholder={t('auth.recovery.motherBirthYear')} className={inputCls} required />
+      <input type="text" value={primarySchool} onChange={e => setPrimarySchool(e.target.value.toLowerCase())} placeholder={t('auth.recovery.primarySchool')} className={inputCls} required />
+      {configured && <p className="text-xs text-text-muted dark:text-text-muted-dark">{t('account.recoveryUpdateHint')}</p>}
+      {error && <p className="text-sm text-error-text dark:text-error-text-dark">{error}</p>}
+      <div className="flex gap-3 pt-1">
+        {onSkip && (
+          <button type="button" onClick={onSkip} className="flex-1 py-3 rounded-full border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium hover:bg-surface dark:hover:bg-surface-dark transition-colors text-sm">
+            {t('common.skip')}
+          </button>
+        )}
+        <button type="submit" disabled={loading} className={`py-3 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors text-sm ${onSkip ? 'flex-1' : 'w-full'}`}>
+          {submitLabel || t('common.save')}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ChangePasswordForm({ onSubmit, error, success }) {
+  const { t } = useTranslation();
+  const [current, setCurrent] = React.useState('');
+  const [next, setNext] = React.useState('');
+  const [confirm, setConfirm] = React.useState('');
+  const [localError, setLocalError] = React.useState('');
+
+  const inputCls = "w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark";
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (next !== confirm) { setLocalError(t('auth.passwordMismatch')); return; }
+    setLocalError('');
+    onSubmit({ currentPassword: current, newPassword: next });
+  };
+
+  if (success) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-4 text-center">
+        <div className="w-12 h-12 rounded-full bg-confirm/10 dark:bg-confirm-dark/10 flex items-center justify-center">
+          <Check className="w-6 h-6 text-confirm-text dark:text-confirm-text-dark" />
+        </div>
+        <p className="text-sm font-medium text-text-primary dark:text-text-primary-dark">{t('account.passwordChanged')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <input type="password" value={current} onChange={e => setCurrent(e.target.value)} placeholder={t('account.currentPassword')} className={inputCls} required />
+      <input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder={t('account.newPassword')} className={inputCls} required minLength={8} />
+      <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t('auth.confirmPassword')} className={inputCls} required />
+      {(error || localError) && <p className="text-sm text-error-text dark:text-error-text-dark">{error || localError}</p>}
+      <button type="submit" className="w-full py-3 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors text-sm">
+        {t('account.changePasswordSubmit')}
+      </button>
+    </form>
+  );
+}
+
+function CreateCardModal({ isOpen, onClose, onConfirm }) {
+  const { t } = useTranslation();
+  const [slug, setSlug] = React.useState('');
+  const [status, setStatus] = React.useState('idle'); // idle | checking | available | taken | short | error
+  const checkRef = React.useRef(null);
+  const host = window.location.host;
+
+  React.useEffect(() => {
+    if (!isOpen) { setSlug(''); setStatus('idle'); }
+  }, [isOpen]);
+
+  const handleChange = (e) => {
+    const clean = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setSlug(clean);
+    clearTimeout(checkRef.current);
+    if (clean.length < 2) { setStatus(clean.length > 0 ? 'short' : 'idle'); return; }
+    setStatus('checking');
+    checkRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/cards/check-slug?slug=${encodeURIComponent(clean)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setStatus(data.exists ? 'taken' : 'available');
+        } else { setStatus('error'); }
+      } catch { setStatus('error'); }
+    }, 450);
+  };
+
+  const canCreate = status === 'available';
+
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-card dark:bg-card-dark rounded-card shadow-xl max-w-md w-full p-6">
+        <h3 className="text-lg font-bold text-text-primary dark:text-text-primary-dark mb-2">{t('admin.dashboard.createCardModal.title')}</h3>
+        <p className="text-sm text-text-secondary dark:text-text-muted-dark mb-5">{t('admin.dashboard.createCardModal.description')}</p>
+
+        <label className="block text-xs font-semibold text-text-secondary dark:text-text-muted-dark mb-1 uppercase tracking-wide">
+          {t('admin.dashboard.createCardModal.inputLabel')}
+        </label>
+        <input
+          type="text"
+          value={slug}
+          onChange={handleChange}
+          placeholder={t('admin.dashboard.createCardModal.slugPlaceholder')}
+          autoFocus
+          className="w-full px-4 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark font-mono"
+        />
+        <p className="text-[11px] text-text-muted dark:text-text-muted-dark mt-1 mb-3">{t('admin.dashboard.createCardModal.inputHint')}</p>
+
+        {slug.length > 0 && (
+          <div className="bg-surface dark:bg-surface-dark rounded-badge px-4 py-3 mb-4">
+            <p className="text-[10px] text-text-muted dark:text-text-muted-dark uppercase tracking-wide mb-1">{t('admin.dashboard.createCardModal.preview')}</p>
+            <p className="text-sm font-mono text-text-primary dark:text-text-primary-dark break-all">
+              <span className="text-text-muted dark:text-text-muted-dark">{host}/</span><span className="font-bold">{slug || '…'}</span>
+            </p>
+            <div className="mt-2 flex items-center gap-1.5">
+              {status === 'checking' && <><div className="w-3 h-3 rounded-full border-2 border-text-muted dark:border-text-muted-dark border-t-transparent animate-spin"/><span className="text-[11px] text-text-muted dark:text-text-muted-dark">{t('admin.dashboard.createCardModal.checking')}</span></>}
+              {status === 'available' && <><Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400"/><span className="text-[11px] text-green-600 dark:text-green-400 font-medium">{t('admin.dashboard.createCardModal.available')}</span></>}
+              {status === 'taken' && <><X className="w-3.5 h-3.5 text-error-text dark:text-error-text-dark"/><span className="text-[11px] text-error-text dark:text-error-text-dark font-medium">{t('admin.dashboard.createCardModal.taken')}</span></>}
+              {status === 'short' && <><AlertCircle className="w-3.5 h-3.5 text-text-muted dark:text-text-muted-dark"/><span className="text-[11px] text-text-muted dark:text-text-muted-dark">{t('admin.dashboard.createCardModal.tooShort')}</span></>}
+              {status === 'error' && <><AlertCircle className="w-3.5 h-3.5 text-error-text dark:text-error-text-dark"/><span className="text-[11px] text-error-text dark:text-error-text-dark">{t('common.error')}</span></>}
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-3 mt-2">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-full border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium hover:bg-surface dark:hover:bg-surface-dark transition-colors text-sm">{t('common.cancel')}</button>
+          <button onClick={() => canCreate && onConfirm(slug)} disabled={!canCreate} className={`flex-1 py-2.5 rounded-full font-bold text-sm transition-colors ${canCreate ? 'bg-action dark:bg-action-dark text-white hover:bg-action-hover dark:hover:bg-action-hover-dark' : 'bg-surface dark:bg-surface-dark text-text-muted dark:text-text-muted-dark cursor-not-allowed'}`}>{t('admin.dashboard.createCardModal.create')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -617,9 +804,10 @@ export default function App() {
     // Initialize view based on current path - don't default to 'loading' for public routes
     const initialPath = typeof window !== 'undefined' ? window.location.pathname : '';
     const pathParts = initialPath.substring(1).split('/').filter(p => p);
-    const isShortCode = pathParts.length === 1 && /^[a-zA-Z0-9]{7}$/.test(pathParts[0]);
-    const isOrgScoped = pathParts.length === 2 && pathParts[0] && pathParts[1];
-    const isPublicRoute = isShortCode || isOrgScoped || (pathParts.length === 1 && pathParts[0] && !initialPath.startsWith('/people') && !initialPath.startsWith('/login') && !initialPath.startsWith('/register') && !initialPath.startsWith('/setup') && !initialPath.startsWith('/settings') && !initialPath.startsWith('/users') && !initialPath.startsWith('/cards') && initialPath !== '/');
+    const ADMIN_RESERVED = new Set(['login', 'register', 'recover', 'setup', 'settings', 'users', 'people', 'cards', 'admin', 'invite']);
+    const isShortCode = pathParts.length === 1 && /^[a-zA-Z0-9]{7}$/.test(pathParts[0]) && !ADMIN_RESERVED.has(pathParts[0]);
+    const isOrgScoped = pathParts.length === 2 && pathParts[0] && pathParts[1] && !ADMIN_RESERVED.has(pathParts[0]);
+    const isPublicRoute = isShortCode || isOrgScoped || (pathParts.length === 1 && pathParts[0] && !initialPath.startsWith('/people') && !initialPath.startsWith('/login') && !initialPath.startsWith('/register') && !initialPath.startsWith('/recover') && !initialPath.startsWith('/setup') && !initialPath.startsWith('/settings') && !initialPath.startsWith('/users') && !initialPath.startsWith('/cards') && initialPath !== '/');
     return isPublicRoute ? 'public-loading' : 'loading';
   }); 
   const [data, setData] = useState(() => getDefaultTemplate(null));
@@ -636,6 +824,16 @@ export default function App() {
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
   const [registerError, setRegisterError] = useState('');
+  const [recoverEmail, setRecoverEmail] = useState('');
+  const [recoverQuestionKey, setRecoverQuestionKey] = useState('dni');
+  const [recoverAnswer, setRecoverAnswer] = useState('');
+  const [recoverError, setRecoverError] = useState('');
+  const [recoverTempPassword, setRecoverTempPassword] = useState('');
+  const [accountPasswordError, setAccountPasswordError] = useState('');
+  const [accountPasswordSuccess, setAccountPasswordSuccess] = useState(false);
+  const [accountRecoveryError, setAccountRecoveryError] = useState('');
+  const [accountRecoverySuccess, setAccountRecoverySuccess] = useState(false);
+  const [recoveryConfigured, setRecoveryConfigured] = useState(null); // null=unknown, false=not set, {updatedAt}=set
   const [modal, setModal] = useState({ isOpen: false, type: 'info', title: '', message: '', onConfirm: null, onClose: null, confirmText: '', cancelText: '' });
   const [createCardModal, setCreateCardModal] = useState({ isOpen: false, slug: '', userId: null });
   const [targetUserIdForNewCard, setTargetUserIdForNewCard] = useState(null);
@@ -890,9 +1088,10 @@ const [settings, setSettings] = useState({
     // This prevents duplicate fetches
     // Public routes: /:orgSlug/:cardSlug or /:slug (short code or legacy)
     const pathParts = path.substring(1).split('/').filter(p => p);
-    const isShortCode = pathParts.length === 1 && /^[a-zA-Z0-9]{7}$/.test(pathParts[0]);
-    const isOrgScoped = pathParts.length === 2 && pathParts[0] && pathParts[1];
-    const isPublicRoute = isShortCode || isOrgScoped || (pathParts.length === 1 && pathParts[0] && !path.startsWith('/people') && !path.startsWith('/login') && !path.startsWith('/register') && !path.startsWith('/setup') && !path.startsWith('/settings') && !path.startsWith('/users') && !path.startsWith('/cards') && path !== '/');
+    const ADMIN_RESERVED = new Set(['login', 'register', 'recover', 'setup', 'settings', 'users', 'people', 'cards', 'admin', 'invite']);
+    const isShortCode = pathParts.length === 1 && /^[a-zA-Z0-9]{7}$/.test(pathParts[0]) && !ADMIN_RESERVED.has(pathParts[0]);
+    const isOrgScoped = pathParts.length === 2 && pathParts[0] && pathParts[1] && !ADMIN_RESERVED.has(pathParts[0]);
+    const isPublicRoute = isShortCode || isOrgScoped || (pathParts.length === 1 && pathParts[0] && !path.startsWith('/people') && !path.startsWith('/login') && !path.startsWith('/register') && !path.startsWith('/recover') && !path.startsWith('/setup') && !path.startsWith('/settings') && !path.startsWith('/users') && !path.startsWith('/cards') && path !== '/');
     
     if (isPublicRoute) {
       // Don't interfere with public card routes - let PublicCardRoute handle it
@@ -950,6 +1149,23 @@ const [settings, setSettings] = useState({
       setRegisterError('');
       setView('register');
       document.title = "Create Account";
+    } else if (path === '/settings/account') {
+      setAccountPasswordError('');
+      setAccountPasswordSuccess(false);
+      setAccountRecoveryError('');
+      setAccountRecoverySuccess(false);
+      setRecoveryConfigured(null);
+      setView('account');
+      document.title = "My Account";
+      fetchRecoveryStatus();
+    } else if (path === '/recover') {
+      setRecoverEmail('');
+      setRecoverQuestionKey('dni');
+      setRecoverAnswer('');
+      setRecoverError('');
+      setRecoverTempPassword('');
+      setView('recover');
+      document.title = "Recover Password";
     } else if (path === '/settings') {
       setView('admin-settings');
       fetchCsrfToken();
@@ -1430,16 +1646,93 @@ const [settings, setSettings] = useState({
       });
       if (res.ok) {
         await fetchCsrfToken();
-        const authResult = await checkAuth();
-        if (authResult.isAuthenticated) {
-          navigate('/people');
-        }
+        await checkAuth();
+        // Show optional recovery setup step before going to dashboard
+        setView('register-recovery');
       } else {
         const errorData = await res.json().catch(() => ({}));
         setRegisterError(errorData.error || 'Registration failed');
       }
     } catch (e) {
       setRegisterError('Registration failed');
+    }
+  };
+
+  const handleRecover = async (e) => {
+    e.preventDefault();
+    setRecoverError('');
+    setRecoverTempPassword('');
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/recover`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: recoverEmail.toLowerCase().trim(), questionKey: recoverQuestionKey, answer: recoverAnswer.trim() })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRecoverTempPassword(data.tempPassword);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setRecoverError(errorData.error || t('auth.recoverFailed'));
+      }
+    } catch (e) {
+      setRecoverError(t('auth.recoverFailed'));
+    }
+  };
+
+  const fetchRecoveryStatus = async () => {
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/recovery-status`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setRecoveryConfigured(data.configured ? { updatedAt: data.updatedAt } : false);
+      }
+    } catch {
+      // Non-critical — leave as null
+    }
+  };
+
+  const handleSetRecoveryAnswers = async ({ dni, birthCity, motherBirthYear, primarySchool }) => {
+    setAccountRecoveryError('');
+    setAccountRecoverySuccess(false);
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/set-recovery-answers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        credentials: 'include',
+        body: JSON.stringify({ dni, birthCity, motherBirthYear, primarySchool })
+      });
+      if (res.ok) {
+        setAccountRecoverySuccess(true);
+        fetchRecoveryStatus();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setAccountRecoveryError(d.error || t('common.error'));
+      }
+    } catch {
+      setAccountRecoveryError(t('common.error'));
+    }
+  };
+
+  const handleChangePassword = async ({ currentPassword, newPassword }) => {
+    setAccountPasswordError('');
+    setAccountPasswordSuccess(false);
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      if (res.ok) {
+        setAccountPasswordSuccess(true);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setAccountPasswordError(d.error || t('common.error'));
+      }
+    } catch {
+      setAccountPasswordError(t('common.error'));
     }
   };
 
@@ -1505,32 +1798,15 @@ const [settings, setSettings] = useState({
     }
   };
 
-  const handleCreateCardConfirm = () => {
-    const slug = createCardModal.slug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
-    if (!slug) {
-      showAlert('Please enter a valid user URL (e.g., "sarah")', 'error', 'Invalid User URL');
-      return;
-    }
-    if (slug.length < 1) {
-      showAlert('User URL must be at least 1 character long', 'error', 'Invalid User URL');
-      return;
-    }
-    // Prevent duplicate user URLs for the same user
-    // Flatten all cards from grouped structure to check for duplicates
-    const allCards = cardList.filter(c => c.slug === slug);
-    if (allCards.length > 0) {
-      showAlert(`A card with user URL "${slug}" already exists. Please choose another user URL.`, 'error', 'User URL already exists');
-      return;
-    }
-    // Store userId for this new card if provided
+  const handleCreateCardConfirm = (slug) => {
+    if (!slug || slug.length < 2) return;
     if (createCardModal.userId) {
       setTargetUserIdForNewCard(createCardModal.userId);
     }
     setCreateCardModal({ isOpen: false, slug: '', userId: null });
     setCurrentSlug(slug);
-    setData(getDefaultTemplate(settings)); 
+    setData(getDefaultTemplate(settings));
     setView('admin-editor');
-    // Navigate to editor route, just like handleEdit does
     navigate(`/people/edit/${slug}`);
   };
 
@@ -1912,13 +2188,19 @@ const [settings, setSettings] = useState({
                 {error && <div className="flex items-center gap-2 text-error-text dark:text-error-text-dark text-sm">{error}</div>}
                 <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">{t('admin.loginTitle')}</button>
               </form>
-              <div className="mt-6 pt-6 border-t border-border dark:border-border-dark text-center">
-                <p className="text-sm text-text-muted dark:text-text-muted-dark mb-3">{t('auth.noAccount')}</p>
+              <div className="mt-6 pt-6 border-t border-border dark:border-border-dark text-center space-y-3">
+                <p className="text-sm text-text-muted dark:text-text-muted-dark">{t('auth.noAccount')}</p>
                 <button
                   onClick={() => navigate('/register')}
                   className="w-full py-3 rounded-full border-2 border-confirm dark:border-confirm-dark text-confirm-text dark:text-confirm-text-dark font-semibold hover:bg-confirm dark:hover:bg-confirm-dark hover:text-white transition-colors text-sm"
                 >
                   {t('auth.signUp')}
+                </button>
+                <button
+                  onClick={() => navigate('/recover')}
+                  className="text-sm text-text-muted dark:text-text-muted-dark hover:underline"
+                >
+                  {t('auth.forgotPassword')}
                 </button>
               </div>
             <div className="text-center mt-6 group relative z-10">
@@ -1937,7 +2219,7 @@ const [settings, setSettings] = useState({
         <>
           <div className="min-h-screen bg-surface dark:bg-main-dark flex items-center justify-center p-4">
             <div className="bg-card dark:bg-card-dark max-w-sm w-full rounded-page shadow-xl p-8">
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400"><UserPlus className="w-8 h-8" /></div>
                 <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.registerTitle')}</h1>
               </div>
@@ -1945,14 +2227,82 @@ const [settings, setSettings] = useState({
                 <input type="email" value={registerEmail} onChange={e => setRegisterEmail(e.target.value)} placeholder={t('admin.emailPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus required />
                 <input type="password" value={registerPassword} onChange={e => setRegisterPassword(e.target.value)} placeholder={t('admin.passwordPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" required />
                 <input type="password" value={registerPasswordConfirm} onChange={e => setRegisterPasswordConfirm(e.target.value)} placeholder={t('auth.confirmPassword')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" required />
-                {registerError && <div className="flex items-center gap-2 text-error-text dark:text-error-text-dark text-sm">{registerError}</div>}
+                {registerError && <div className="text-error-text dark:text-error-text-dark text-sm">{registerError}</div>}
                 <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">{t('auth.registerSubmit')}</button>
               </form>
               <p className="text-center text-sm text-text-muted dark:text-text-muted-dark mt-4">
                 {t('auth.haveAccount')}{' '}
                 <button onClick={() => navigate('/login')} className="font-medium text-confirm-text dark:text-confirm-text-dark hover:underline">{t('auth.signIn')}</button>
               </p>
-              <div className="text-center mt-6 group relative z-10">
+              <div className="text-center mt-6 flex justify-center">
+                <img src="/graphics/Swiish_Logo.svg" alt="Swiish" className="h-4 w-auto dark:hidden swiish-logo" />
+                <img src="/graphics/Swiish_Logo_DarkBg.svg" alt="Swiish" className="h-4 w-auto hidden dark:block swiish-logo" />
+              </div>
+            </div>
+          </div>
+          <VersionBadge />
+        </>
+      )}
+      {view === 'register-recovery' && (
+        <>
+          <div className="min-h-screen bg-surface dark:bg-main-dark flex items-center justify-center p-4">
+            <div className="bg-card dark:bg-card-dark max-w-sm w-full rounded-page shadow-xl p-8">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400"><Lock className="w-8 h-8" /></div>
+                <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverySetupTitle')}</h1>
+                <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{t('auth.recoverySetupSubtitle')}</p>
+              </div>
+              <RecoveryAnswersForm
+                onSubmit={async (answers) => {
+                  await handleSetRecoveryAnswers(answers);
+                  navigate('/people');
+                }}
+                onSkip={() => navigate('/people')}
+                submitLabel={t('auth.recoverySetupSave')}
+                error={accountRecoveryError}
+                success={accountRecoverySuccess}
+              />
+            </div>
+          </div>
+          <VersionBadge />
+        </>
+      )}
+      {view === 'recover' && (
+        <>
+          <div className="min-h-screen bg-surface dark:bg-main-dark flex items-center justify-center p-4">
+            <div className="bg-card dark:bg-card-dark max-w-sm w-full rounded-page shadow-xl p-8">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400"><Lock className="w-8 h-8" /></div>
+                <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.recoverTitle')}</h1>
+                <p className="text-sm text-text-muted dark:text-text-muted-dark mt-1">{t('auth.recoverSubtitle')}</p>
+              </div>
+              {recoverTempPassword ? (
+                <div className="space-y-4">
+                  <div className="bg-confirm/10 dark:bg-confirm-dark/10 border border-confirm dark:border-confirm-dark rounded-card p-4 text-center">
+                    <p className="text-sm text-text-secondary dark:text-text-muted-dark mb-2">{t('auth.recoverTempLabel')}</p>
+                    <p className="text-xl font-mono font-bold text-text-primary dark:text-text-primary-dark tracking-widest">{recoverTempPassword}</p>
+                    <p className="text-xs text-text-muted dark:text-text-muted-dark mt-2">{t('auth.recoverTempHint')}</p>
+                  </div>
+                  <button onClick={() => navigate('/login')} className="w-full py-3.5 rounded-full bg-action dark:bg-action-dark text-white font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark transition-colors">{t('auth.signIn')}</button>
+                </div>
+              ) : (
+                <form onSubmit={handleRecover} className="space-y-4">
+                  <input type="email" value={recoverEmail} onChange={e => setRecoverEmail(e.target.value)} placeholder={t('admin.emailPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus required />
+                  <select value={recoverQuestionKey} onChange={e => { setRecoverQuestionKey(e.target.value); setRecoverAnswer(''); }} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark">
+                    <option value="dni">{t('auth.recovery.dni')}</option>
+                    <option value="birth_city">{t('auth.recovery.birthCity')}</option>
+                    <option value="mother_birth_year">{t('auth.recovery.motherBirthYear')}</option>
+                    <option value="primary_school">{t('auth.recovery.primarySchool')}</option>
+                  </select>
+                  <input type="text" value={recoverAnswer} onChange={e => setRecoverAnswer(e.target.value.toLowerCase())} placeholder={t('auth.recoverAnswerPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" required />
+                  {recoverError && <div className="text-error-text dark:text-error-text-dark text-sm">{recoverError}</div>}
+                  <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">{t('auth.recoverSubmit')}</button>
+                </form>
+              )}
+              <p className="text-center text-sm text-text-muted dark:text-text-muted-dark mt-4">
+                <button onClick={() => navigate('/login')} className="font-medium text-confirm-text dark:text-confirm-text-dark hover:underline">{t('auth.signIn')}</button>
+              </p>
+              <div className="text-center mt-6">
                 <div className="flex justify-center">
                   <img src="/graphics/Swiish_Logo.svg" alt="Swiish" className="h-4 w-auto dark:hidden swiish-logo" />
                   <img src="/graphics/Swiish_Logo_DarkBg.svg" alt="Swiish" className="h-4 w-auto hidden dark:block swiish-logo" />
@@ -1961,7 +2311,48 @@ const [settings, setSettings] = useState({
             </div>
           </div>
           <VersionBadge />
-          <Modal isOpen={modal.isOpen} onClose={closeModal} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirm} confirmText={modal.confirmText} cancelText={modal.cancelText} />
+        </>
+      )}
+      {view === 'account' && (
+        <>
+          <div className="min-h-screen bg-surface dark:bg-main-dark p-6 md:p-12">
+            <div className="max-w-lg mx-auto">
+              <div className="flex items-center gap-4 mb-8">
+                <button onClick={() => navigate('/people')} className="p-2 rounded-full hover:bg-card dark:hover:bg-card-dark transition-colors text-text-muted dark:text-text-muted-dark">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('account.title')}</h1>
+                  <p className="text-sm text-text-muted dark:text-text-muted-dark">{t('account.subtitle')}</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-card dark:bg-card-dark rounded-card border border-border-subtle dark:border-border-dark p-6">
+                  <h2 className="text-base font-semibold text-text-primary dark:text-text-primary-dark mb-1">{t('account.changePasswordTitle')}</h2>
+                  <p className="text-sm text-text-muted dark:text-text-muted-dark mb-5">{t('account.changePasswordDesc')}</p>
+                  <ChangePasswordForm
+                    onSubmit={handleChangePassword}
+                    error={accountPasswordError}
+                    success={accountPasswordSuccess}
+                  />
+                </div>
+
+                <div className="bg-card dark:bg-card-dark rounded-card border border-border-subtle dark:border-border-dark p-6">
+                  <h2 className="text-base font-semibold text-text-primary dark:text-text-primary-dark mb-1">{t('account.recoveryTitle')}</h2>
+                  <p className="text-sm text-text-muted dark:text-text-muted-dark mb-5">{t('account.recoveryDesc')}</p>
+                  <RecoveryAnswersForm
+                    onSubmit={handleSetRecoveryAnswers}
+                    submitLabel={t('account.recoverySave')}
+                    error={accountRecoveryError}
+                    success={accountRecoverySuccess}
+                    configured={recoveryConfigured}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <VersionBadge />
         </>
       )}
       {view === 'admin-dashboard' && (
@@ -1978,6 +2369,9 @@ const [settings, setSettings] = useState({
                  <LanguageToggle />
                  <button onClick={toggleDarkMode} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap flex items-center gap-2 text-sm md:text-base">
                    {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                 </button>
+                 <button onClick={() => navigate('/settings/account')} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-secondary dark:text-text-secondary-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap flex items-center gap-2 text-sm md:text-base">
+                   <User className="w-4 h-4" /> <span className="hidden sm:inline">{t('account.menuLabel')}</span>
                  </button>
                  <button onClick={handleLogout} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap text-sm md:text-base">{t('auth.logout')}</button>
                  {userRole === 'owner' && (
@@ -2136,24 +2530,24 @@ const [settings, setSettings] = useState({
                   </div>
                 );
               })}
-              {cardList.length === 0 && (
-                userRole === 'member' ? (
-                  <div className="col-span-full py-20 text-center bg-card dark:bg-card-dark rounded-card border-thick border-dashed border-border dark:border-border-dark flex flex-col items-center justify-center gap-4">
-                    <p className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.memberEmpty.subtitle')}</p>
-                    <button
-                      onClick={() => setCreateCardModal({ isOpen: true, slug: '', userId: null })}
-                      className="px-4 py-3 bg-action dark:bg-action-dark text-white rounded-button font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" /> {t('admin.createCard')}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="col-span-full py-20 text-center text-text-muted-subtle dark:text-text-muted-dark bg-card dark:bg-card-dark rounded-card border-thick border-dashed border-border dark:border-border-dark">
-                    {t('admin.dashboard.noPeopleYet')}
-                  </div>
-                )
-              )}
           </div>
+          {cardList.length === 0 && (
+            userRole === 'member' ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center bg-card dark:bg-card-dark rounded-card border-thick border-dashed border-border dark:border-border-dark gap-4">
+                <p className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.memberEmpty.subtitle')}</p>
+                <button
+                  onClick={() => setCreateCardModal({ isOpen: true, slug: '', userId: null })}
+                  className="px-4 py-3 bg-action dark:bg-action-dark text-white rounded-button font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> {t('admin.createCard')}
+                </button>
+              </div>
+            ) : (
+              <div className="py-20 text-center text-text-muted-subtle dark:text-text-muted-dark bg-card dark:bg-card-dark rounded-card border-thick border-dashed border-border dark:border-border-dark">
+                {t('admin.dashboard.noPeopleYet')}
+              </div>
+            )
+          )}
           </div>
           </div>
           <div className="fixed bottom-4 right-4 z-10 text-center group">
@@ -2307,19 +2701,10 @@ const [settings, setSettings] = useState({
           )}
           <VersionBadge />
           <Modal isOpen={modal.isOpen} onClose={closeModal} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirm} confirmText={modal.confirmText} cancelText={modal.cancelText} />
-          <Modal
+          <CreateCardModal
             isOpen={createCardModal.isOpen}
             onClose={handleCreateCardCancel}
-            type="info"
-            title={t('admin.dashboard.createCardModal.title')}
-            message={t('admin.dashboard.createCardModal.message')}
-            inputLabel={t('admin.dashboard.createCardModal.inputLabel')}
-            inputPlaceholder="sarah"
-            inputValue={createCardModal.slug}
-            onInputChange={(value) => setCreateCardModal(prev => ({ ...prev, slug: value }))}
             onConfirm={handleCreateCardConfirm}
-            confirmText={t('admin.dashboard.createCardModal.create')}
-            cancelText={t('common.cancel')}
           />
         </>
       )}
@@ -2346,19 +2731,10 @@ const [settings, setSettings] = useState({
               </button>
             </div>
           </div>
-          <Modal
+          <CreateCardModal
             isOpen={createCardModal.isOpen}
             onClose={handleCreateCardCancel}
-            type="info"
-            title={t('admin.dashboard.createCardModal.title')}
-            message={t('admin.dashboard.createCardModal.message')}
-            inputLabel={t('admin.dashboard.createCardModal.inputLabel')}
-            inputPlaceholder="sarah"
-            inputValue={createCardModal.slug}
-            onInputChange={(value) => setCreateCardModal(prev => ({ ...prev, slug: value }))}
             onConfirm={handleCreateCardConfirm}
-            confirmText={t('admin.dashboard.createCardModal.create')}
-            cancelText={t('common.cancel')}
           />
           <Modal isOpen={modal.isOpen} onClose={closeModal} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirm} confirmText={modal.confirmText} cancelText={modal.cancelText} />
         </>
@@ -2423,6 +2799,8 @@ const [settings, setSettings] = useState({
         {/* Admin routes - must come before public routes to prevent matching */}
         <Route path="/login" element={renderAdminViews()} />
         <Route path="/register" element={renderAdminViews()} />
+        <Route path="/recover" element={renderAdminViews()} />
+        <Route path="/settings/account" element={renderAdminViews()} />
         <Route path="/setup" element={renderAdminViews()} />
         <Route path="/people/edit/:slug" element={renderAdminViews()} />
         <Route path="/people" element={renderAdminViews()} />
@@ -2506,9 +2884,12 @@ function PublicCardRoute({ view, isPublicLoading, error, data, settings, darkMod
 
     // Parse route to determine fetch strategy
     const pathParts = path.substring(1).split('/').filter(p => p);
-    const RESERVED = new Set(['login', 'register', 'setup', 'settings', 'users', 'people', 'cards', 'admin', 'invite']);
+    const RESERVED = new Set(['login', 'register', 'recover', 'setup', 'settings', 'users', 'people', 'cards', 'admin', 'invite']);
     if (pathParts.length === 1 && RESERVED.has(pathParts[0])) {
       return; // Never treat reserved admin/auth paths as card slugs
+    }
+    if (pathParts.length === 2 && RESERVED.has(pathParts[0])) {
+      return; // Never treat /settings/account or similar nested admin paths as org-scoped card URLs
     }
     const isShortCode = pathParts.length === 1 && /^[a-zA-Z0-9]{7}$/.test(pathParts[0]);
     const isOrgScoped = pathParts.length === 2 && pathParts[0] && pathParts[1];
@@ -3099,6 +3480,7 @@ END:VCARD`;
           })()}
           <div className="flex items-center justify-center text-text-muted dark:text-text-muted-dark text-sm gap-2"><Briefcase className="w-4 h-4" /><span>{sanitizeText(personal.company || '')}</span></div>
           {personal.location && <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1"><MapPin className="w-4 h-4" /><span>{sanitizeText(personal.location)}</span></div>}
+          {personal.occupation && <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1"><Building2 className="w-4 h-4" /><span>{sanitizeText(personal.occupation)}</span></div>}
         </div>
 
         {personal.bio && <div className="mb-8"><p className="text-text-secondary dark:text-text-secondary-dark leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHTML(personal.bio) }}></p></div>}
@@ -3444,7 +3826,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
       <div className="w-full lg:w-1/2 bg-card dark:bg-card-dark border-r border-border dark:border-border-dark h-auto lg:h-screen overflow-y-auto flex flex-col">
         <div className="p-6 border-b border-border-subtle dark:border-border-dark flex items-center justify-between bg-card dark:bg-card-dark sticky top-0 z-10">
           <div className="flex items-center gap-4">
-             {!onLogout && <button onClick={onBack} className="p-2 hover:bg-surface dark:hover:bg-surface-dark rounded-full text-text-muted dark:text-text-muted-dark"><ArrowLeft className="w-5 h-5"/></button>}
+             <button onClick={onBack} className="p-2 hover:bg-surface dark:hover:bg-surface-dark rounded-full text-text-muted dark:text-text-muted-dark"><ArrowLeft className="w-5 h-5"/></button>
              <div>
                <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">{t('editor.editing', { slug })}</h1>
              </div>
@@ -3506,6 +3888,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                   </div>
                 </div>
                 <Input label={t('editor.fields.location')} value={data.personal.location} onChange={v => handleInputChange('personal', 'location', v)} />
+                <Input label={t('editor.fields.occupation')} value={data.personal.occupation || ''} onChange={v => handleInputChange('personal', 'occupation', v)} />
                 <TextArea label={t('editor.fields.bio')} value={data.personal.bio} onChange={v => handleInputChange('personal', 'bio', v)} />
                 <div className="h-px bg-surface dark:bg-surface-dark" />
                 <div className="space-y-4">

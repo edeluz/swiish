@@ -13,7 +13,42 @@
     "signUp": "Click here to create an account",
     "passwordMismatch": "Passwords do not match",
     "emailExists": "An account with this email already exists",
-    "registerSuccess": "Account created successfully"
+    "registerSuccess": "Account created successfully",
+    "forgotPassword": "Forgot your password?",
+    "recovery": {
+      "dni": "ID / National identity document",
+      "birthCity": "What city were you born in?",
+      "motherBirthYear": "What year was your mother born?",
+      "primarySchool": "What is the name of your primary school?"
+    },
+    "recoverySetupTitle": "Set up password recovery",
+    "recoverySetupSubtitle": "These details let you recover your password if you forget it. You can do this now or later from your account.",
+    "recoverySetupSave": "Save and continue",
+    "recoverTitle": "Recover password",
+    "recoverSubtitle": "Choose a question and answer it to verify your identity.",
+    "recoverAnswerPlaceholder": "Your answer",
+    "recoverSubmit": "Verify and recover",
+    "recoverFailed": "Incorrect answer. Please check your details and try again.",
+    "recoverTempLabel": "Your temporary password is:",
+    "recoverTempHint": "Log in with this password and change it from My Account."
+  },
+  "account": {
+    "menuLabel": "My Account",
+    "title": "My Account",
+    "subtitle": "Manage your password and recovery information",
+    "changePasswordTitle": "Change password",
+    "changePasswordDesc": "Enter your current password and choose a new one.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "changePasswordSubmit": "Change password",
+    "passwordChanged": "Password updated successfully!",
+    "recoveryTitle": "Recovery information",
+    "recoveryDesc": "These details are used to verify your identity if you forget your password.",
+    "recoverySave": "Save recovery information",
+    "recoverySaved": "Recovery information saved successfully!",
+    "recoveryConfigured": "Recovery information already configured",
+    "recoveryNotConfigured": "Recovery information not yet configured",
+    "recoveryUpdateHint": "Fill in all fields to update your saved answers."
   },
   "common": {
     "save": "Save",
@@ -24,7 +59,9 @@
     "ok": "OK",
     "confirm": "Confirm",
     "demoMode": "Demo Mode",
-    "demoModeReset": "All changes reset every {{minutes}} minutes"
+    "demoModeReset": "All changes reset every {{minutes}} minutes",
+    "skip": "Skip for now",
+    "error": "Something went wrong. Please try again."
   },
   "admin": {
     "peopleTitle": "People",
@@ -73,9 +110,16 @@
       },
       "createCardModal": {
         "title": "Create New Card",
-        "message": "Enter a user URL for the new card (e.g., 'sarah'):",
-        "inputLabel": "User URL",
-        "create": "Create"
+        "description": "Choose a unique and recognisable web address for your card. This will be the public URL where anyone can find you.",
+        "inputLabel": "Web address (URL)",
+        "inputHint": "Lowercase letters, numbers and hyphens only. No spaces.",
+        "preview": "Your URL preview",
+        "checking": "Checking availability...",
+        "available": "Available",
+        "taken": "Already taken, choose another",
+        "tooShort": "Minimum 2 characters",
+        "create": "Create card",
+        "slugPlaceholder": "e.g. maria-gomez"
       },
       "memberEmpty": {
         "title": "You don't have a card yet",
@@ -164,6 +208,7 @@
       "organisationPlaceholder": "Organisation Name",
       "organisationNote": "Organisation name is set by your organisation",
       "location": "Location",
+      "occupation": "Occupation / Workplace",
       "bio": "Bio",
       "phone": "Phone",
       "website": "Website"

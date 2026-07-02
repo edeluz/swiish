@@ -7,7 +7,7 @@ const multer = require('multer');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const { body, param, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 const validator = require('validator');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -1214,19 +1214,13 @@ app.post('/api/auth/register', loginLimiter, [
   try {
     const { email, password } = req.body;
 
-    // Get the single organisation for this platform instance
     db.get('SELECT id FROM organisations LIMIT 1', [], async (err, org) => {
       if (err) return next(err);
-      if (!org) {
-        return res.status(503).json({ error: 'Platform not configured yet' });
-      }
+      if (!org) return res.status(503).json({ error: 'Platform not configured yet' });
 
-      // Reject if email already registered
       db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()], async (err, existing) => {
         if (err) return next(err);
-        if (existing) {
-          return res.status(400).json({ error: 'An account with this email already exists' });
-        }
+        if (existing) return res.status(400).json({ error: 'An account with this email already exists' });
 
         const userId = require('crypto').randomUUID();
         try {
@@ -1238,7 +1232,6 @@ app.post('/api/auth/register', loginLimiter, [
             (err) => {
               if (err) return next(err);
 
-              // Auto-login after registration
               const token = jwt.sign(
                 { user_id: userId, organisation_id: org.id, role: 'member' },
                 JWT_SECRET,
@@ -1255,6 +1248,135 @@ app.post('/api/auth/register', loginLimiter, [
               res.json({ success: true });
             }
           );
+        } catch (err) {
+          return next(err);
+        }
+      });
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Get recovery answers status (authenticated) — never returns the answers, only whether they exist
+app.get('/api/auth/recovery-status', requireAuth, apiLimiter, (req, res, next) => {
+  db.get('SELECT updated_at FROM user_recovery_answers WHERE user_id = ?', [req.user.id], (err, row) => {
+    if (err) return next(err);
+    res.json({ configured: !!row, updatedAt: row ? row.updated_at : null });
+  });
+});
+
+// Set or update recovery answers (authenticated)
+app.post('/api/auth/set-recovery-answers', requireAuth, apiLimiter, csrfProtection, [
+  body('dni').notEmpty().withMessage('DNI is required'),
+  body('birthCity').notEmpty().withMessage('Birth city is required'),
+  body('motherBirthYear').notEmpty().withMessage('Mother birth year is required'),
+  body('primarySchool').notEmpty().withMessage('Primary school is required')
+], handleValidationErrors, async (req, res, next) => {
+  try {
+    const { dni, birthCity, motherBirthYear, primarySchool } = req.body;
+    const normalize = (s) => (s || '').toLowerCase().trim();
+
+    const [dniHash, birthCityHash, motherBirthYearHash, primarySchoolHash] = await Promise.all([
+      bcrypt.hash(normalize(dni), 10),
+      bcrypt.hash(normalize(birthCity), 10),
+      bcrypt.hash(normalize(motherBirthYear), 10),
+      bcrypt.hash(normalize(primarySchool), 10)
+    ]);
+
+    db.run(
+      `INSERT INTO user_recovery_answers (user_id, dni_hash, birth_city_hash, mother_birth_year_hash, primary_school_hash)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+         dni_hash = excluded.dni_hash,
+         birth_city_hash = excluded.birth_city_hash,
+         mother_birth_year_hash = excluded.mother_birth_year_hash,
+         primary_school_hash = excluded.primary_school_hash,
+         updated_at = CURRENT_TIMESTAMP`,
+      [req.user.id, dniHash, birthCityHash, motherBirthYearHash, primarySchoolHash],
+      (err) => {
+        if (err) return next(err);
+        res.json({ success: true });
+      }
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Change password (authenticated)
+app.post('/api/auth/change-password', requireAuth, apiLimiter, csrfProtection, [
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
+], handleValidationErrors, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    db.get('SELECT password_hash FROM users WHERE id = ?', [req.user.id], async (err, user) => {
+      if (err) return next(err);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const match = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!match) return res.status(400).json({ error: 'Current password is incorrect' });
+
+      const newHash = await bcrypt.hash(newPassword, 10);
+      db.run('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, req.user.id], (err) => {
+        if (err) return next(err);
+        res.json({ success: true });
+      });
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Password recovery — step 1: verify identity, step 2: get temp password
+// No CSRF needed: unauthenticated endpoint; loginLimiter prevents abuse
+app.post('/api/auth/recover', loginLimiter, [
+  body('email').custom((value) => {
+    if (value && (validator.isEmail(value) || /^[^\s@]+@localhost(\.[^\s@]+)?$/.test(value))) {
+      return true;
+    }
+    throw new Error('Valid email required');
+  }),
+  body('questionKey').isIn(['dni', 'birth_city', 'mother_birth_year', 'primary_school']).withMessage('Invalid question'),
+  body('answer').notEmpty().withMessage('Answer is required')
+], handleValidationErrors, async (req, res, next) => {
+  try {
+    const { email, questionKey, answer } = req.body;
+    const normalizedAnswer = (answer || '').toLowerCase().trim();
+
+    const columnMap = {
+      dni: 'dni_hash',
+      birth_city: 'birth_city_hash',
+      mother_birth_year: 'mother_birth_year_hash',
+      primary_school: 'primary_school_hash'
+    };
+
+    db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()], async (err, user) => {
+      if (err) return next(err);
+      // Use same error for unknown email (prevents user enumeration)
+      if (!user) return res.status(400).json({ error: 'Incorrect answer. Please check your details and try again.' });
+
+      db.get('SELECT * FROM user_recovery_answers WHERE user_id = ?', [user.id], async (err, row) => {
+        if (err) return next(err);
+        if (!row) return res.status(400).json({ error: 'Incorrect answer. Please check your details and try again.' });
+
+        const hashColumn = columnMap[questionKey];
+        const storedHash = row[hashColumn];
+
+        try {
+          const match = await bcrypt.compare(normalizedAnswer, storedHash);
+          if (!match) return res.status(400).json({ error: 'Incorrect answer. Please check your details and try again.' });
+
+          // Generate a temporary password
+          const tempPassword = require('crypto').randomBytes(6).toString('hex'); // 12 hex chars
+          const tempHash = await bcrypt.hash(tempPassword, 10);
+
+          db.run('UPDATE users SET password_hash = ? WHERE id = ?', [tempHash, user.id], (err) => {
+            if (err) return next(err);
+            res.json({ tempPassword });
+          });
         } catch (err) {
           return next(err);
         }
@@ -1738,6 +1860,17 @@ const shortCodeLimiter = rateLimit({
   message: 'Too many short code lookup attempts',
   standardHeaders: true,
   legacyHeaders: false
+});
+
+// Check if a card slug is available (public, rate-limited — slug existence is not sensitive)
+app.get('/api/cards/check-slug', publicReadLimiter, [
+  query('slug').matches(/^[a-z0-9-]{1,80}$/).withMessage('Invalid slug format')
+], handleValidationErrors, (req, res, next) => {
+  const slug = (req.query.slug || '').toLowerCase().trim();
+  db.get('SELECT slug FROM cards WHERE slug = ?', [slug], (err, row) => {
+    if (err) return next(err);
+    res.json({ slug, exists: !!row });
+  });
 });
 
 app.get('/api/cards/short/:shortCode', cardReadLimiter, (req, res, next) => {

@@ -13,7 +13,42 @@
     "signUp": "Hacé clic aquí para registrarte",
     "passwordMismatch": "Las contraseñas no coinciden",
     "emailExists": "Ya existe una cuenta con este email",
-    "registerSuccess": "Cuenta creada correctamente"
+    "registerSuccess": "Cuenta creada correctamente",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "recovery": {
+      "dni": "DNI / Documento de identidad",
+      "birthCity": "¿En qué ciudad naciste?",
+      "motherBirthYear": "¿Año de nacimiento de tu madre?",
+      "primarySchool": "¿Cuál es el nombre de tu escuela primaria?"
+    },
+    "recoverySetupTitle": "Configurá tu recuperación",
+    "recoverySetupSubtitle": "Estos datos te permitirán recuperar tu contraseña si la olvidás. Podés hacerlo ahora o más tarde desde tu cuenta.",
+    "recoverySetupSave": "Guardar y continuar",
+    "recoverTitle": "Recuperar contraseña",
+    "recoverSubtitle": "Elegí una pregunta y respondela para verificar tu identidad.",
+    "recoverAnswerPlaceholder": "Tu respuesta",
+    "recoverSubmit": "Verificar y recuperar",
+    "recoverFailed": "Respuesta incorrecta. Verificá tus datos e intentá de nuevo.",
+    "recoverTempLabel": "Tu contraseña temporal es:",
+    "recoverTempHint": "Iniciá sesión con esta contraseña y cambiala desde Mi cuenta."
+  },
+  "account": {
+    "menuLabel": "Mi cuenta",
+    "title": "Mi cuenta",
+    "subtitle": "Gestioná tu contraseña y datos de recuperación",
+    "changePasswordTitle": "Cambiar contraseña",
+    "changePasswordDesc": "Ingresá tu contraseña actual y elegí una nueva.",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "changePasswordSubmit": "Cambiar contraseña",
+    "passwordChanged": "¡Contraseña actualizada correctamente!",
+    "recoveryTitle": "Datos de recuperación",
+    "recoveryDesc": "Estos datos se usan para verificar tu identidad si olvidás tu contraseña.",
+    "recoverySave": "Guardar datos de recuperación",
+    "recoverySaved": "¡Datos de recuperación guardados correctamente!",
+    "recoveryConfigured": "Datos de recuperación configurados",
+    "recoveryNotConfigured": "Aún no configuraste tus datos de recuperación",
+    "recoveryUpdateHint": "Completá todos los campos para actualizar tus respuestas guardadas."
   },
   "common": {
     "save": "Guardar",
@@ -24,7 +59,9 @@
     "ok": "Aceptar",
     "confirm": "Confirmar",
     "demoMode": "Modo Demo",
-    "demoModeReset": "Todos los cambios se reinician cada {{minutes}} minutos"
+    "demoModeReset": "Todos los cambios se reinician cada {{minutes}} minutos",
+    "skip": "Omitir por ahora",
+    "error": "Ocurrió un error. Intentá de nuevo."
   },
   "admin": {
     "peopleTitle": "Personas",
@@ -73,13 +110,20 @@
       },
       "createCardModal": {
         "title": "Crear nueva tarjeta",
-        "message": "Ingresá una URL de usuario para la nueva tarjeta (ej. 'sara'):",
-        "inputLabel": "URL de usuario",
-        "create": "Crear"
+        "description": "Elige una dirección web única y fácil de recordar para tu tarjeta. Esta será la URL pública con la que cualquier persona podrá encontrarte.",
+        "inputLabel": "Dirección web (URL)",
+        "inputHint": "Solo letras minúsculas, números y guiones. Sin espacios.",
+        "preview": "Vista previa de tu URL",
+        "checking": "Verificando disponibilidad...",
+        "available": "Disponible",
+        "taken": "Ya está en uso, elegí otro",
+        "tooShort": "Mínimo 2 caracteres",
+        "create": "Crear tarjeta",
+        "slugPlaceholder": "ej. maria-gomez"
       },
       "memberEmpty": {
-        "title": "Todavía no tenés una tarjeta",
-        "subtitle": "Creá tu primera tarjeta para empezar.",
+        "title": "Todavía no tienes una tarjeta",
+        "subtitle": "Crea tu primera tarjeta para empezar.",
         "createCard": "Crear tarjeta"
       }
     },
@@ -157,13 +201,14 @@
       "privacy": "Privacidad"
     },
     "fields": {
-      "firstName": "Nombre",
-      "lastName": "Apellido",
+      "firstName": "Nombres",
+      "lastName": "Apellidos",
       "jobTitle": "Puesto",
       "organisation": "Organización",
       "organisationPlaceholder": "Nombre de la organización",
       "organisationNote": "El nombre de la organización lo define tu organización",
       "location": "Ubicación",
+      "occupation": "Ocupación / Lugar de trabajo",
       "bio": "Biografía",
       "phone": "Teléfono",
       "website": "Sitio web"
