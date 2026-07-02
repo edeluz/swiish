@@ -8,8 +8,8 @@ import flags from 'country-flag-icons/react/3x2';
 import { 
   Camera, Upload, Save, Share2, Phone, Mail, Globe, 
   Linkedin, Twitter, Instagram, Github, Edit3, Eye, 
-  X, Check, User, MapPin, Briefcase, Lock, LogIn, AlertCircle, 
-  Plus, Trash2, ArrowLeft, Users, ExternalLink, RefreshCw,
+  X, Check, User, MapPin, Briefcase, Lock, LogIn, AlertCircle,
+  Plus, Trash2, ArrowLeft, Users, ExternalLink, RefreshCw, UserPlus,
   Download, FileText, Calendar, Video, Music, ShoppingCart, 
   Link as LinkIcon, Youtube, Facebook, MessageCircle, Sun, Moon,
   ChevronUp, ChevronDown, GripVertical, Settings
@@ -619,7 +619,7 @@ export default function App() {
     const pathParts = initialPath.substring(1).split('/').filter(p => p);
     const isShortCode = pathParts.length === 1 && /^[a-zA-Z0-9]{7}$/.test(pathParts[0]);
     const isOrgScoped = pathParts.length === 2 && pathParts[0] && pathParts[1];
-    const isPublicRoute = isShortCode || isOrgScoped || (pathParts.length === 1 && pathParts[0] && !initialPath.startsWith('/people') && !initialPath.startsWith('/login') && !initialPath.startsWith('/setup') && !initialPath.startsWith('/settings') && !initialPath.startsWith('/users') && !initialPath.startsWith('/cards') && initialPath !== '/');
+    const isPublicRoute = isShortCode || isOrgScoped || (pathParts.length === 1 && pathParts[0] && !initialPath.startsWith('/people') && !initialPath.startsWith('/login') && !initialPath.startsWith('/register') && !initialPath.startsWith('/setup') && !initialPath.startsWith('/settings') && !initialPath.startsWith('/users') && !initialPath.startsWith('/cards') && initialPath !== '/');
     return isPublicRoute ? 'public-loading' : 'loading';
   }); 
   const [data, setData] = useState(() => getDefaultTemplate(null));
@@ -632,6 +632,10 @@ export default function App() {
   const [userRole, setUserRole] = useState(null); // 'owner' or 'member'
   const [csrfToken, setCsrfToken] = useState('');
   const [error, setError] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
+  const [registerError, setRegisterError] = useState('');
   const [modal, setModal] = useState({ isOpen: false, type: 'info', title: '', message: '', onConfirm: null, onClose: null, confirmText: '', cancelText: '' });
   const [createCardModal, setCreateCardModal] = useState({ isOpen: false, slug: '', userId: null });
   const [targetUserIdForNewCard, setTargetUserIdForNewCard] = useState(null);
@@ -888,7 +892,7 @@ const [settings, setSettings] = useState({
     const pathParts = path.substring(1).split('/').filter(p => p);
     const isShortCode = pathParts.length === 1 && /^[a-zA-Z0-9]{7}$/.test(pathParts[0]);
     const isOrgScoped = pathParts.length === 2 && pathParts[0] && pathParts[1];
-    const isPublicRoute = isShortCode || isOrgScoped || (pathParts.length === 1 && pathParts[0] && !path.startsWith('/people') && !path.startsWith('/login') && !path.startsWith('/setup') && !path.startsWith('/settings') && !path.startsWith('/users') && !path.startsWith('/cards') && path !== '/');
+    const isPublicRoute = isShortCode || isOrgScoped || (pathParts.length === 1 && pathParts[0] && !path.startsWith('/people') && !path.startsWith('/login') && !path.startsWith('/register') && !path.startsWith('/setup') && !path.startsWith('/settings') && !path.startsWith('/users') && !path.startsWith('/cards') && path !== '/');
     
     if (isPublicRoute) {
       // Don't interfere with public card routes - let PublicCardRoute handle it
@@ -939,6 +943,13 @@ const [settings, setSettings] = useState({
         setView('admin-login');
         document.title = "Admin Login";
       });
+    } else if (path === '/register') {
+      setRegisterEmail('');
+      setRegisterPassword('');
+      setRegisterPasswordConfirm('');
+      setRegisterError('');
+      setView('register');
+      document.title = "Create Account";
     } else if (path === '/settings') {
       setView('admin-settings');
       fetchCsrfToken();
@@ -1010,13 +1021,7 @@ const [settings, setSettings] = useState({
             if (authResult.isAuthenticated) {
               // Determine view based on role and route
               if (authResult.userData.role === 'member') {
-                if (authResult.cardList.length === 0) {
-                  setView('member-empty');
-                } else {
-                  // Navigate to first card editor (explicit navigation)
-                  const firstCard = authResult.cardList[0];
-                  navigate(`/people/edit/${firstCard.slug}`, { replace: true });
-                }
+                setView('admin-dashboard');
               } else {
                 // Owner - show dashboard
                 setView('admin-dashboard');
@@ -1406,6 +1411,35 @@ const [settings, setSettings] = useState({
       }
     } catch (e) { 
       setError('Login failed'); 
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setRegisterError('');
+    if (registerPassword !== registerPasswordConfirm) {
+      setRegisterError(t('auth.passwordMismatch'));
+      return;
+    }
+    try {
+      const res = await fetch(`${API_ENDPOINT}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: registerEmail.toLowerCase().trim(), password: registerPassword })
+      });
+      if (res.ok) {
+        await fetchCsrfToken();
+        const authResult = await checkAuth();
+        if (authResult.isAuthenticated) {
+          navigate('/people');
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setRegisterError(errorData.error || 'Registration failed');
+      }
+    } catch (e) {
+      setRegisterError('Registration failed');
     }
   };
 
@@ -1878,12 +1912,52 @@ const [settings, setSettings] = useState({
                 {error && <div className="flex items-center gap-2 text-error-text dark:text-error-text-dark text-sm">{error}</div>}
                 <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">{t('admin.loginTitle')}</button>
               </form>
-            <div className="text-center mt-8 group relative z-10">
+              <div className="mt-6 pt-6 border-t border-border dark:border-border-dark text-center">
+                <p className="text-sm text-text-muted dark:text-text-muted-dark mb-3">{t('auth.noAccount')}</p>
+                <button
+                  onClick={() => navigate('/register')}
+                  className="w-full py-3 rounded-full border-2 border-confirm dark:border-confirm-dark text-confirm-text dark:text-confirm-text-dark font-semibold hover:bg-confirm dark:hover:bg-confirm-dark hover:text-white transition-colors text-sm"
+                >
+                  {t('auth.signUp')}
+                </button>
+              </div>
+            <div className="text-center mt-6 group relative z-10">
               <div className="flex justify-center">
                 <img src="/graphics/Swiish_Logo.svg" alt="Swiish" className="h-4 w-auto dark:hidden swiish-logo" />
                 <img src="/graphics/Swiish_Logo_DarkBg.svg" alt="Swiish" className="h-4 w-auto hidden dark:block swiish-logo" />
               </div>
             </div>
+            </div>
+          </div>
+          <VersionBadge />
+          <Modal isOpen={modal.isOpen} onClose={closeModal} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirm} confirmText={modal.confirmText} cancelText={modal.cancelText} />
+        </>
+      )}
+      {view === 'register' && (
+        <>
+          <div className="min-h-screen bg-surface dark:bg-main-dark flex items-center justify-center p-4">
+            <div className="bg-card dark:bg-card-dark max-w-sm w-full rounded-page shadow-xl p-8">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400"><UserPlus className="w-8 h-8" /></div>
+                <h1 className="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{t('auth.registerTitle')}</h1>
+              </div>
+              <form onSubmit={handleRegister} className="space-y-4">
+                <input type="email" value={registerEmail} onChange={e => setRegisterEmail(e.target.value)} placeholder={t('admin.emailPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" autoFocus required />
+                <input type="password" value={registerPassword} onChange={e => setRegisterPassword(e.target.value)} placeholder={t('admin.passwordPlaceholder')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" required />
+                <input type="password" value={registerPasswordConfirm} onChange={e => setRegisterPasswordConfirm(e.target.value)} placeholder={t('auth.confirmPassword')} className="w-full px-5 py-3 rounded-input border border-border dark:border-border-dark bg-input-bg dark:bg-input-bg-dark text-text-primary dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-focus-ring dark:focus:ring-focus-ring-dark" required />
+                {registerError && <div className="flex items-center gap-2 text-error-text dark:text-error-text-dark text-sm">{registerError}</div>}
+                <button type="submit" className="w-full py-3.5 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors">{t('auth.registerSubmit')}</button>
+              </form>
+              <p className="text-center text-sm text-text-muted dark:text-text-muted-dark mt-4">
+                {t('auth.haveAccount')}{' '}
+                <button onClick={() => navigate('/login')} className="font-medium text-confirm-text dark:text-confirm-text-dark hover:underline">{t('auth.signIn')}</button>
+              </p>
+              <div className="text-center mt-6 group relative z-10">
+                <div className="flex justify-center">
+                  <img src="/graphics/Swiish_Logo.svg" alt="Swiish" className="h-4 w-auto dark:hidden swiish-logo" />
+                  <img src="/graphics/Swiish_Logo_DarkBg.svg" alt="Swiish" className="h-4 w-auto hidden dark:block swiish-logo" />
+                </div>
+              </div>
             </div>
           </div>
           <VersionBadge />
@@ -1916,9 +1990,11 @@ const [settings, setSettings] = useState({
                      <Users className="w-4 h-4" /> {t('admin.users')}
                    </button>
                  )}
-                 <button onClick={handleCreateNew} className="bg-action dark:bg-action-dark text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold flex items-center gap-2 hover:bg-action-hover dark:hover:bg-action-hover-dark transition-all whitespace-nowrap text-sm md:text-base">
-                   <Plus className="w-4 h-4 md:w-5 md:h-5" /> {t('admin.newPerson')}
-                 </button>
+                 {userRole === 'owner' && (
+                   <button onClick={handleCreateNew} className="bg-action dark:bg-action-dark text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold flex items-center gap-2 hover:bg-action-hover dark:hover:bg-action-hover-dark transition-all whitespace-nowrap text-sm md:text-base">
+                     <Plus className="w-4 h-4 md:w-5 md:h-5" /> {t('admin.newPerson')}
+                   </button>
+                 )}
                </div>
             </div>
             <div className="columns-1 md:columns-2 lg:columns-3 gap-6">
@@ -2061,9 +2137,21 @@ const [settings, setSettings] = useState({
                 );
               })}
               {cardList.length === 0 && (
-                 <div className="col-span-full py-20 text-center text-text-muted-subtle dark:text-text-muted-dark bg-card dark:bg-card-dark rounded-card border-thick border-dashed border-border dark:border-border-dark">
-                   {t('admin.dashboard.noPeopleYet')}
-                 </div>
+                userRole === 'member' ? (
+                  <div className="col-span-full py-20 text-center bg-card dark:bg-card-dark rounded-card border-thick border-dashed border-border dark:border-border-dark flex flex-col items-center justify-center gap-4">
+                    <p className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.memberEmpty.subtitle')}</p>
+                    <button
+                      onClick={() => setCreateCardModal({ isOpen: true, slug: '', userId: null })}
+                      className="px-4 py-3 bg-action dark:bg-action-dark text-white rounded-button font-bold hover:bg-action-hover dark:hover:bg-action-hover-dark flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" /> {t('admin.createCard')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="col-span-full py-20 text-center text-text-muted-subtle dark:text-text-muted-dark bg-card dark:bg-card-dark rounded-card border-thick border-dashed border-border dark:border-border-dark">
+                    {t('admin.dashboard.noPeopleYet')}
+                  </div>
+                )
               )}
           </div>
           </div>
@@ -2334,6 +2422,7 @@ const [settings, setSettings] = useState({
       <Routes>
         {/* Admin routes - must come before public routes to prevent matching */}
         <Route path="/login" element={renderAdminViews()} />
+        <Route path="/register" element={renderAdminViews()} />
         <Route path="/setup" element={renderAdminViews()} />
         <Route path="/people/edit/:slug" element={renderAdminViews()} />
         <Route path="/people" element={renderAdminViews()} />
@@ -2409,14 +2498,18 @@ function PublicCardRoute({ view, isPublicLoading, error, data, settings, darkMod
   // Fetch the card when the route changes
   useEffect(() => {
     const path = location.pathname;
-    
+
     // Single guard: skip if we've already fetched for this exact pathname
     if (lastFetchedPathRef.current === path) {
       return;
     }
-    
+
     // Parse route to determine fetch strategy
     const pathParts = path.substring(1).split('/').filter(p => p);
+    const RESERVED = new Set(['login', 'register', 'setup', 'settings', 'users', 'people', 'cards', 'admin', 'invite']);
+    if (pathParts.length === 1 && RESERVED.has(pathParts[0])) {
+      return; // Never treat reserved admin/auth paths as card slugs
+    }
     const isShortCode = pathParts.length === 1 && /^[a-zA-Z0-9]{7}$/.test(pathParts[0]);
     const isOrgScoped = pathParts.length === 2 && pathParts[0] && pathParts[1];
     const isLegacy = pathParts.length === 1 && !isShortCode;

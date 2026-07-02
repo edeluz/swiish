@@ -3,7 +3,17 @@
     "login": "Iniciar sesión",
     "email": "Email",
     "password": "Contraseña",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "registerTitle": "Crear cuenta",
+    "registerSubmit": "Crear cuenta",
+    "confirmPassword": "Confirmar contraseña",
+    "noAccount": "¿Aún no estás registrado?",
+    "haveAccount": "¿Ya tenés cuenta?",
+    "signIn": "Iniciá sesión",
+    "signUp": "Hacé clic aquí para registrarte",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "emailExists": "Ya existe una cuenta con este email",
+    "registerSuccess": "Cuenta creada correctamente"
   },
   "common": {
     "save": "Guardar",

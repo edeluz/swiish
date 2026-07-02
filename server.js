@@ -1200,6 +1200,71 @@ app.post('/api/logout', (req, res) => {
   res.json({ success: true });
 });
 
+// Public Registration — creates a member account in the existing organisation
+// No CSRF needed: unauthenticated endpoint; loginLimiter prevents abuse
+app.post('/api/auth/register', loginLimiter, [
+  body('email').custom((value) => {
+    if (value && (validator.isEmail(value) || /^[^\s@]+@localhost(\.[^\s@]+)?$/.test(value))) {
+      return true;
+    }
+    throw new Error('Valid email required');
+  }),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+], handleValidationErrors, async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    // Get the single organisation for this platform instance
+    db.get('SELECT id FROM organisations LIMIT 1', [], async (err, org) => {
+      if (err) return next(err);
+      if (!org) {
+        return res.status(503).json({ error: 'Platform not configured yet' });
+      }
+
+      // Reject if email already registered
+      db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()], async (err, existing) => {
+        if (err) return next(err);
+        if (existing) {
+          return res.status(400).json({ error: 'An account with this email already exists' });
+        }
+
+        const userId = require('crypto').randomUUID();
+        try {
+          const passwordHash = await bcrypt.hash(password, 10);
+
+          db.run(
+            'INSERT INTO users (id, email, password_hash, organisation_id, role, email_verified) VALUES (?, ?, ?, ?, ?, ?)',
+            [userId, email.toLowerCase(), passwordHash, org.id, 'member', 0],
+            (err) => {
+              if (err) return next(err);
+
+              // Auto-login after registration
+              const token = jwt.sign(
+                { user_id: userId, organisation_id: org.id, role: 'member' },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRES_IN }
+              );
+
+              res.cookie('authToken', token, {
+                httpOnly: true,
+                secure: NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 24 * 60 * 60 * 1000
+              });
+
+              res.json({ success: true });
+            }
+          );
+        } catch (err) {
+          return next(err);
+        }
+      });
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Image Upload Endpoint
 app.post('/api/upload', requireAuth, uploadLimiter, csrfProtection, upload.single('file'), async (req, res, next) => {
   try {

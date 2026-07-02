@@ -3,7 +3,17 @@
     "login": "Login",
     "email": "Email",
     "password": "Password",
-    "logout": "Logout"
+    "logout": "Logout",
+    "registerTitle": "Create account",
+    "registerSubmit": "Create account",
+    "confirmPassword": "Confirm password",
+    "noAccount": "Not registered yet?",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "signUp": "Click here to create an account",
+    "passwordMismatch": "Passwords do not match",
+    "emailExists": "An account with this email already exists",
+    "registerSuccess": "Account created successfully"
   },
   "common": {
     "save": "Save",
