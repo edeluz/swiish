@@ -12,7 +12,7 @@ import {
   Plus, Trash2, ArrowLeft, Users, ExternalLink, RefreshCw, UserPlus,
   Download, FileText, Calendar, Video, Music, ShoppingCart, 
   Link as LinkIcon, Youtube, Facebook, MessageCircle, Sun, Moon,
-  ChevronUp, ChevronDown, GripVertical, Settings, Copy
+  ChevronUp, ChevronDown, GripVertical, Settings, Copy, LogOut
 } from 'lucide-react';
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -99,7 +99,7 @@ const buildQrPayload = (shortCode, data) => {
   const firstName = safe(personal.firstName || '', 40);
   const lastName = safe(personal.lastName || '', 40);
   const fullName = `${firstName} ${lastName}`.trim();
-  const company = safe(personal.company || '', 80);
+  const occupation = safe(personal.occupation || '', 80);
   const email = safe(contact.email || '', 120);
   const phone = safe(contact.phone || '', 50);
 
@@ -110,14 +110,14 @@ const buildQrPayload = (shortCode, data) => {
 
   // Build vCard 3.0 format (minimal for QR scanning reliability)
   let vcard = 'BEGIN:VCARD\nVERSION:3.0\n';
-  
+
   if (fullName) {
     vcard += `FN:${fullName}\n`;
     vcard += `N:${lastName};${firstName};;;\n`;
   }
-  
-  if (company) {
-    vcard += `ORG:${company}\n`;
+
+  if (occupation) {
+    vcard += `ORG:${occupation}\n`;
   }
   
   if (email) {
@@ -201,7 +201,10 @@ const getDefaultTemplate = (settings) => ({
     company: settings?.default_organisation || "",
     bio: "",
     location: "",
-    occupation: ""
+    occupation: "",
+    workplace: "",
+    freelancer: false,
+    showFreelancerLabel: false
   },
   contact: {
     email: "",
@@ -2711,7 +2714,6 @@ const [settings, setSettings] = useState({
                  <button onClick={() => navigate('/settings/account')} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-secondary dark:text-text-secondary-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap flex items-center gap-2 text-sm md:text-base">
                    <User className="w-4 h-4" /> <span className="hidden sm:inline">{t('account.menuLabel')}</span>
                  </button>
-                 <button onClick={handleLogout} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap text-sm md:text-base">{t('auth.logout')}</button>
                  {userRole === 'owner' && (
                    <button onClick={() => navigate('/settings')} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-secondary dark:text-text-secondary-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap flex items-center gap-2 text-sm md:text-base">
                      <Settings className="w-4 h-4" /> <span className="hidden sm:inline">{t('admin.organisation')}</span><span className="sm:hidden">{t('admin.org')}</span>
@@ -2727,6 +2729,9 @@ const [settings, setSettings] = useState({
                      <Plus className="w-4 h-4 md:w-5 md:h-5" /> {t('admin.newPerson')}
                    </button>
                  )}
+                 <button onClick={handleLogout} className="px-3 py-2 md:px-4 md:py-3 rounded-full font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors whitespace-nowrap flex items-center gap-2 text-sm md:text-base">
+                   <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">{t('auth.logout')}</span>
+                 </button>
                </div>
             </div>
             <div className="columns-1 md:columns-2 lg:columns-3 gap-6">
@@ -3061,12 +3066,6 @@ const [settings, setSettings] = useState({
               >
                 <Plus className="w-4 h-4" /> {t('admin.dashboard.memberEmpty.createCard')}
               </button>
-              <button
-                onClick={handleLogout}
-                className="w-full mt-3 px-4 py-2 bg-surface dark:bg-surface-dark text-text-primary dark:text-text-secondary-dark rounded-button font-medium hover:bg-surface dark:hover:bg-surface-dark"
-              >
-                {t('auth.logout')}
-              </button>
             </div>
           </div>
           <CreateCardModal
@@ -3088,11 +3087,12 @@ const [settings, setSettings] = useState({
             settings={settings}
             csrfToken={csrfToken}
             showAlert={showAlert}
+            showConfirm={showConfirm}
             darkMode={darkMode}
             toggleDarkMode={toggleDarkMode}
             isSaving={isSaving}
             isSuccess={isSuccess}
-            onLogout={userRole === 'member' ? handleLogout : undefined}
+            onLogout={undefined}
           />
           <VersionBadge />
           <Modal isOpen={modal.isOpen} onClose={closeModal} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirm} confirmText={modal.confirmText} cancelText={modal.cancelText} />
@@ -3564,19 +3564,21 @@ function CardDisplay({ data, settings, darkMode, toggleDarkMode, showAlert }) {
   const generateVCard = () => {
     const firstName = sanitizeText(personal.firstName || '');
     const lastName = sanitizeText(personal.lastName || '');
-    const company = sanitizeText(personal.company || '');
+    const occupation = sanitizeText(personal.occupation || '');
+    const workplace = sanitizeText(personal.workplace || '');
     const title = sanitizeText(personal.title || '');
     const phone = sanitizeText(contact.phone || '');
     const email = sanitizeText(contact.email || '');
     const website = sanitizeText(contact.website || '');
     const bio = sanitizeText(personal.bio || '');
-    
+
     const vcard = `BEGIN:VCARD
 VERSION:3.0
 FN:${firstName} ${lastName}
 N:${lastName};${firstName};;;
-ORG:${company}
+ORG:${workplace}
 TITLE:${title}
+ROLE:${occupation}
 TEL;TYPE=CELL:${phone}
 EMAIL;TYPE=WORK:${email}
 URL:${website}
@@ -3600,7 +3602,7 @@ END:VCARD`;
   const shortCode = data._shortCode || (isShortCodeRoute ? pathParts[0] : null);
   const shortUrl = shortCode ? `${window.location.origin}/${shortCode}` : '';
   const cardName = `${personal.firstName || ''} ${personal.lastName || ''}`.trim();
-  const company = personal.company || '';
+  const company = personal.freelancer ? '' : (personal.workplace || personal.company || '');
 
   // If QR is shown, render only the QR view (full screen, independent of card)
   if (showQR) {
@@ -3816,9 +3818,27 @@ END:VCARD`;
             }
             return <div className="text-lg font-medium" style={{ color: getTextColor(theme.color, settings) }}>{title}</div>;
           })()}
-          <div className="flex items-center justify-center text-text-muted dark:text-text-muted-dark text-sm gap-2"><Briefcase className="w-4 h-4" /><span>{sanitizeText(personal.company || '')}</span></div>
+          {personal.occupation && <div className="flex items-center justify-center text-text-muted dark:text-text-muted-dark text-sm gap-2"><Briefcase className="w-4 h-4" /><span>{sanitizeText(personal.occupation)}</span></div>}
+          {personal.freelancer && personal.showFreelancerLabel
+            ? <div className="flex items-center justify-center text-text-muted dark:text-text-muted-dark text-sm gap-2 mt-1"><Building2 className="w-4 h-4" /><span>{t('editor.fields.freelancerLabel')}</span></div>
+            : personal.workplace && <div className="flex items-center justify-center text-text-muted dark:text-text-muted-dark text-sm gap-2 mt-1"><Building2 className="w-4 h-4" /><span>{sanitizeText(personal.workplace)}</span></div>
+          }
           {personal.location && <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1"><MapPin className="w-4 h-4" /><span>{sanitizeText(personal.location)}</span></div>}
-          {personal.occupation && <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1"><Building2 className="w-4 h-4" /><span>{sanitizeText(personal.occupation)}</span></div>}
+          {(() => {
+            const showContact = !(privacy.requireInteraction ?? true) || contactRevealed;
+            return <>
+              {contact.email && showContact && (
+                <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1">
+                  <Mail className="w-4 h-4" /><span>{sanitizeText(contact.email)}</span>
+                </div>
+              )}
+              {contact.phone && showContact && (
+                <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1">
+                  <Phone className="w-4 h-4" /><span>{sanitizeText(contact.phone)}</span>
+                </div>
+              )}
+            </>;
+          })()}
         </div>
 
         {personal.bio && <div className="mb-8"><p className="text-text-secondary dark:text-text-secondary-dark leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHTML(personal.bio) }}></p></div>}
@@ -4079,7 +4099,7 @@ function SortableLinkItem({ link, children }) {
   return children({ setNodeRef, style, attributes, listeners });
 }
 
-function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, showAlert, darkMode, toggleDarkMode, isSaving, isSuccess, onLogout }) {
+function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, showAlert, showConfirm, darkMode, toggleDarkMode, isSaving, isSuccess, onLogout }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
   const [isUploading, setIsUploading] = useState(false);
@@ -4091,6 +4111,21 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
   
   const handleInputChange = (section, field, value) => {
     setData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
+  };
+
+  const handleFreelancerChange = (checked) => {
+    if (!checked) {
+      setData(prev => ({ ...prev, personal: { ...prev.personal, freelancer: false, showFreelancerLabel: false } }));
+      return;
+    }
+    setData(prev => ({ ...prev, personal: { ...prev.personal, freelancer: true, showFreelancerLabel: false } }));
+    showConfirm(
+      t('editor.fields.freelancerConfirmMessage'),
+      () => setData(prev => ({ ...prev, personal: { ...prev.personal, showFreelancerLabel: true } })),
+      t('editor.fields.freelancerConfirmTitle'),
+      t('editor.fields.freelancerConfirmYes'),
+      t('editor.fields.freelancerConfirmNo')
+    );
   };
 
   const handleImageUpload = async (type, e) => {
@@ -4207,26 +4242,24 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input label={t('editor.fields.firstName')} value={data.personal.firstName} onChange={v => handleInputChange('personal', 'firstName', v)} />
                   <Input label={t('editor.fields.lastName')} value={data.personal.lastName} onChange={v => handleInputChange('personal', 'lastName', v)} />
-                  <Input label={t('editor.fields.jobTitle')} value={data.personal.title} onChange={v => handleInputChange('personal', 'title', v)} />
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-text-primary dark:text-text-secondary-dark">{t('editor.fields.organisation')}</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={settings?.default_organisation || data.personal.company || ''}
-                        disabled
-                        className="w-full px-4 py-2.5 rounded-input border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-text-secondary dark:text-text-muted-dark cursor-not-allowed"
-                        placeholder={t('editor.fields.organisationPlaceholder')}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
-                        <Lock className="w-4 h-4 text-text-muted-subtle dark:text-text-muted-dark" />
-                      </div>
-                    </div>
-                    <p className="text-xs text-text-muted dark:text-text-muted-dark mt-1">{t('editor.fields.organisationNote')}</p>
-                  </div>
                 </div>
+                <Input label={t('editor.fields.jobTitle')} value={data.personal.title} onChange={v => handleInputChange('personal', 'title', v)} />
                 <Input label={t('editor.fields.location')} value={data.personal.location} onChange={v => handleInputChange('personal', 'location', v)} />
                 <Input label={t('editor.fields.occupation')} value={data.personal.occupation || ''} onChange={v => handleInputChange('personal', 'occupation', v)} />
+                <div className="space-y-2">
+                  {!data.personal.freelancer && (
+                    <Input label={t('editor.fields.workplace')} value={data.personal.workplace || ''} onChange={v => handleInputChange('personal', 'workplace', v)} />
+                  )}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={!!data.personal.freelancer}
+                      onChange={e => handleFreelancerChange(e.target.checked)}
+                      className="w-4 h-4 rounded accent-action"
+                    />
+                    <span className="text-sm text-text-muted dark:text-text-muted-dark">{t('editor.fields.freelancer')}</span>
+                  </label>
+                </div>
                 <TextArea label={t('editor.fields.bio')} value={data.personal.bio} onChange={v => handleInputChange('personal', 'bio', v)} />
                 <div className="h-px bg-surface dark:bg-surface-dark" />
                 <div className="space-y-4">
@@ -4234,7 +4267,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                   <div className="space-y-1">
                     <PhoneInput
                       international
-                      defaultCountry="GB"
+                      defaultCountry="CO"
                       value={data.contact.phone || ''}
                       onChange={(value) => handleInputChange('contact', 'phone', value || '')}
                       placeholder={t('editor.fields.phone')}

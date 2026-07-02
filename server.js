@@ -603,7 +603,7 @@ const recoveryLimiter = rateLimit({
 // Additional rate limiters for different endpoint types
 const publicReadLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 5,
+  max: 300, // each page load hits SPA fallback + manifest + icons simultaneously
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -611,7 +611,7 @@ const publicReadLimiter = rateLimit({
 
 const cardReadLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 5,
+  max: 120,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -1652,6 +1652,9 @@ const cardDataValidation = [
   body('personal.company').optional().trim().isLength({ max: 200 }).withMessage('Company name too long'),
   body('personal.bio').optional().trim().isLength({ max: 1000 }).withMessage('Bio too long'),
   body('personal.location').optional().trim().isLength({ max: 200 }).withMessage('Location too long'),
+  body('personal.occupation').optional().trim().isLength({ max: 200 }).withMessage('Occupation too long'),
+  body('personal.workplace').optional().trim().isLength({ max: 200 }).withMessage('Workplace too long'),
+  body('personal.freelancer').optional().isBoolean().withMessage('Freelancer must be boolean'),
   body('contact.email').optional().trim().custom((value) => {
     if (value && !validator.isEmail(value)) {
       throw new Error('Invalid email format');
@@ -2293,7 +2296,11 @@ app.post('/api/cards/:slug', requireAuth, apiLimiter, csrfProtection, [
       title: (req.body.personal?.title || '').trim().substring(0, 200),
       company: (req.body.personal?.company || '').trim().substring(0, 200),
       bio: (req.body.personal?.bio || '').trim().substring(0, 1000),
-      location: (req.body.personal?.location || '').trim().substring(0, 200)
+      location: (req.body.personal?.location || '').trim().substring(0, 200),
+      occupation: (req.body.personal?.occupation || '').trim().substring(0, 200),
+      workplace: (req.body.personal?.workplace || '').trim().substring(0, 200),
+      freelancer: req.body.personal?.freelancer === true || req.body.personal?.freelancer === 'true',
+      showFreelancerLabel: req.body.personal?.showFreelancerLabel === true || req.body.personal?.showFreelancerLabel === 'true'
     },
     contact: {
       email: (req.body.contact?.email || '').trim(),
