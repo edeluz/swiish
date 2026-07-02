@@ -3824,21 +3824,16 @@ END:VCARD`;
             : personal.workplace && <div className="flex items-center justify-center text-text-muted dark:text-text-muted-dark text-sm gap-2 mt-1"><Building2 className="w-4 h-4" /><span>{sanitizeText(personal.workplace)}</span></div>
           }
           {personal.location && <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1"><MapPin className="w-4 h-4" /><span>{sanitizeText(personal.location)}</span></div>}
-          {(() => {
-            const showContact = !(privacy.requireInteraction ?? true) || contactRevealed;
-            return <>
-              {contact.email && showContact && (
-                <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1">
-                  <Mail className="w-4 h-4" /><span>{sanitizeText(contact.email)}</span>
-                </div>
-              )}
-              {contact.phone && showContact && (
-                <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1">
-                  <Phone className="w-4 h-4" /><span>{sanitizeText(contact.phone)}</span>
-                </div>
-              )}
-            </>;
-          })()}
+          {contact.email && (
+            <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1">
+              <Mail className="w-4 h-4" /><span>{sanitizeText(contact.email)}</span>
+            </div>
+          )}
+          {contact.phone && (
+            <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1">
+              <Phone className="w-4 h-4" /><span>{sanitizeText(contact.phone)}</span>
+            </div>
+          )}
         </div>
 
         {personal.bio && <div className="mb-8"><p className="text-text-secondary dark:text-text-secondary-dark leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHTML(personal.bio) }}></p></div>}
