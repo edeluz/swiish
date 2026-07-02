@@ -1,12 +1,12 @@
 # Build Stage
-FROM node:22-alpine AS build
+FROM node:18-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
 COPY tailwind.config.js ./
 COPY postcss.config.js ./
 COPY scripts/ scripts/
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
 COPY public/ public/
 COPY src/ src/
