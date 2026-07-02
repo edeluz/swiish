@@ -471,8 +471,8 @@ function backfillShortCodes() {
 
 // --- 3. SETUP UPLOADS (Multer) ---
 const { randomUUID } = require('crypto');
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/avif'];
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif', '.avif'];
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024; // 5MB default
 
 const storage = multer.diskStorage({
@@ -1509,21 +1509,24 @@ app.post('/api/upload', requireAuth, uploadLimiter, csrfProtection, upload.singl
       return res.status(400).json({ error: 'Invalid file type. Only images are allowed.' });
     }
 
-    // Verify extension matches MIME type
+    // Verify extension is in the accepted list for the detected MIME type
     const ext = path.extname(req.file.filename).toLowerCase();
-    const expectedExt = {
-      'image/jpeg': '.jpg',
-      'image/png': '.png',
-      'image/webp': '.webp',
-      'image/gif': '.gif'
+    const mimeToExts = {
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/webp': ['.webp'],
+      'image/gif': ['.gif'],
+      'image/heic': ['.heic'],
+      'image/heif': ['.heif'],
+      'image/avif': ['.avif']
     };
-    
-    if (expectedExt[fileType.mime] !== ext) {
+
+    const allowedExtsForMime = mimeToExts[fileType.mime] || [];
+    if (!allowedExtsForMime.includes(ext)) {
       try {
         const safePath = validateFilePath(filePath);
         await fs.promises.unlink(safePath);
       } catch (unlinkErr) {
-        // Log but don't fail the request if cleanup fails
         log('Failed to delete invalid file:', unlinkErr.message);
       }
       return res.status(400).json({ error: 'File extension does not match file type' });

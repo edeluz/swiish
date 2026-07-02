@@ -4118,7 +4118,7 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
       setData(prev => ({ ...prev, personal: { ...prev.personal, freelancer: false, showFreelancerLabel: false } }));
       return;
     }
-    setData(prev => ({ ...prev, personal: { ...prev.personal, freelancer: true, showFreelancerLabel: false } }));
+    setData(prev => ({ ...prev, personal: { ...prev.personal, freelancer: true, showFreelancerLabel: false, workplace: '' } }));
     showConfirm(
       t('editor.fields.freelancerConfirmMessage'),
       () => setData(prev => ({ ...prev, personal: { ...prev.personal, showFreelancerLabel: true } })),
