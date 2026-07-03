@@ -2093,7 +2093,7 @@ const [settings, setSettings] = useState({
   const handleRemoveUser = async (userId, userEmail) => {
     if (showConfirm) {
       showConfirm(
-        `Are you sure you want to permanently delete ${userEmail}? This will delete the user and all their cards. This action cannot be undone.`,
+        t('common.confirmMessages.deleteUser', { email: userEmail }),
         async () => {
           try {
             const res = await apiCall(`${API_ENDPOINT}/admin/users/${userId}`, {
@@ -2110,9 +2110,8 @@ const [settings, setSettings] = useState({
             if (showAlert) showAlert('Error deleting user', 'error');
           }
         },
-        'Delete User',
-        'Delete',
-        'Cancel'
+        t('common.confirmMessages.deleteUserTitle'),
+        t('common.delete')
       );
     }
   };
@@ -2169,7 +2168,7 @@ const [settings, setSettings] = useState({
 
   const handleDelete = async (slug, userId) => {
     showConfirm(
-      `Are you sure you want to delete ${slug}?`,
+      t('common.confirmMessages.deleteCard', { slug }),
       async () => {
         const validUserId = userId && typeof userId === 'string' && userId.trim() ? userId : null;
         const isOtherUser = validUserId !== null && validUserId !== currentUserId;
@@ -2187,9 +2186,8 @@ const [settings, setSettings] = useState({
           showAlert('Failed to delete card', 'error');
         }
       },
-      'Delete Card',
-      'Delete',
-      'Cancel'
+      t('common.confirmMessages.deleteCardTitle'),
+      t('common.delete')
     );
   };
 
@@ -2253,11 +2251,10 @@ const [settings, setSettings] = useState({
       );
       if (duplicates.length > 0) {
         showConfirm(
-          `Another card already uses this email address (${email}). Would you like to save anyway?`,
+          t('common.confirmMessages.duplicateEmail', { email }),
           performSave,
-          'Email already in use',
-          'Save anyway',
-          'Cancel'
+          t('common.confirmMessages.duplicateEmailTitle'),
+          t('common.confirmMessages.saveAnyway')
         );
         return;
       }
@@ -4677,6 +4674,7 @@ function ColorSelector({ selectedColor, onSelect, label, showAuto = false, autoL
 }
 
 function UserManagementView({ apiCall, userRole, onBack, showAlert, showConfirm }) {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -4850,7 +4848,7 @@ function UserManagementView({ apiCall, userRole, onBack, showAlert, showConfirm 
   const handleRemoveUser = async (userId, userEmail) => {
     if (showConfirm) {
       showConfirm(
-        `Are you sure you want to permanently delete ${userEmail}? This will delete the user and all their cards. This action cannot be undone.`,
+        t('common.confirmMessages.deleteUser', { email: userEmail }),
         async () => {
           try {
             const res = await apiCall(`${API_ENDPOINT}/admin/users/${userId}`, {
@@ -4867,9 +4865,8 @@ function UserManagementView({ apiCall, userRole, onBack, showAlert, showConfirm 
             if (showAlert) showAlert('Error deleting user', 'error');
           }
         },
-        'Delete User',
-        'Delete',
-        'Cancel'
+        t('common.confirmMessages.deleteUserTitle'),
+        t('common.delete')
       );
     }
   };
@@ -4895,7 +4892,7 @@ function UserManagementView({ apiCall, userRole, onBack, showAlert, showConfirm 
   const handleDeleteInvitation = async (invitationId) => {
     if (showConfirm) {
       showConfirm(
-        'Are you sure you want to delete this invitation?',
+        t('common.confirmMessages.deleteInvitation'),
         async () => {
           try {
             const res = await apiCall(`${API_ENDPOINT}/admin/invitations/${invitationId}`, {
@@ -4909,9 +4906,8 @@ function UserManagementView({ apiCall, userRole, onBack, showAlert, showConfirm 
             if (showAlert) showAlert('Error deleting invitation', 'error');
           }
         },
-        'Delete Invitation',
-        'Delete',
-        'Cancel'
+        t('common.confirmMessages.deleteInvitationTitle'),
+        t('common.delete')
       );
     }
   };
@@ -5491,6 +5487,7 @@ function InvitationAcceptance({ apiCall, showAlert, API_ENDPOINT }) {
 }
 
 function SettingsView({ settings, setSettings, onBack, onSave, apiCall, showAlert, showConfirm }) {
+  const { t } = useTranslation();
   // Initialize local settings with extracted base colors from existing data
   const initializeColorData = (colors) => {
     return colors.map(color => {
@@ -5806,7 +5803,7 @@ function SettingsView({ settings, setSettings, onBack, onSave, apiCall, showAler
     const colorName = localSettings.theme_colors[colorIndex]?.name;
     if (showConfirm) {
       showConfirm(
-        `Delete color "${colorName}"?`,
+        t('common.confirmMessages.deleteColor', { name: colorName }),
         () => {
           setLocalSettings(prev => ({
             ...prev,
@@ -5820,9 +5817,8 @@ function SettingsView({ settings, setSettings, onBack, onSave, apiCall, showAler
             setEditingColorIndex(editingColorIndex - 1);
           }
         },
-        'Delete Color',
-        'Delete',
-        'Cancel'
+        t('common.confirmMessages.deleteColorTitle'),
+        t('common.delete')
       );
     }
   };

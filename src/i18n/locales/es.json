@@ -87,7 +87,21 @@
     "demoMode": "Modo Demo",
     "demoModeReset": "Todos los cambios se reinician cada {{minutes}} minutos",
     "skip": "Omitir por ahora",
-    "error": "Ocurrió un error. Intentá de nuevo."
+    "error": "Ocurrió un error. Intentá de nuevo.",
+    "delete": "Eliminar",
+    "confirmMessages": {
+      "deleteUser": "¿Estás seguro de eliminar permanentemente a {{email}}? Esto eliminará al usuario y todas sus tarjetas. Esta acción no se puede deshacer.",
+      "deleteCard": "¿Estás seguro de eliminar la tarjeta {{slug}}?",
+      "duplicateEmail": "Otra tarjeta ya usa esta dirección de correo ({{email}}). ¿Deseás guardar de todas formas?",
+      "deleteInvitation": "¿Estás seguro de eliminar esta invitación?",
+      "deleteColor": "¿Eliminar el color \"{{name}}\"?",
+      "deleteUserTitle": "Eliminar usuario",
+      "deleteCardTitle": "Eliminar tarjeta",
+      "deleteInvitationTitle": "Eliminar invitación",
+      "deleteColorTitle": "Eliminar color",
+      "duplicateEmailTitle": "Correo ya en uso",
+      "saveAnyway": "Guardar de todas formas"
+    }
   },
   "admin": {
     "peopleTitle": "Personas",

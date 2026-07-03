@@ -87,7 +87,21 @@
     "demoMode": "Demo Mode",
     "demoModeReset": "All changes reset every {{minutes}} minutes",
     "skip": "Skip for now",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Please try again.",
+    "delete": "Delete",
+    "confirmMessages": {
+      "deleteUser": "Are you sure you want to permanently delete {{email}}? This will delete the user and all their cards. This action cannot be undone.",
+      "deleteCard": "Are you sure you want to delete {{slug}}?",
+      "duplicateEmail": "Another card already uses this email address ({{email}}). Would you like to save anyway?",
+      "deleteInvitation": "Are you sure you want to delete this invitation?",
+      "deleteColor": "Delete color \"{{name}}\"?",
+      "deleteUserTitle": "Delete User",
+      "deleteCardTitle": "Delete Card",
+      "deleteInvitationTitle": "Delete Invitation",
+      "deleteColorTitle": "Delete Color",
+      "duplicateEmailTitle": "Email already in use",
+      "saveAnyway": "Save anyway"
+    }
   },
   "admin": {
     "peopleTitle": "People",
