@@ -4253,27 +4253,32 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
 
   return (
     <div className="min-h-screen bg-main dark:bg-main-dark bg-main-texture flex flex-col lg:flex-row">
-      <div className="w-full lg:w-1/2 bg-card dark:bg-card-dark border-r border-border dark:border-border-dark h-auto lg:h-screen overflow-y-auto flex flex-col">
-        <div className="p-6 border-b border-border-subtle dark:border-border-dark flex items-center justify-between bg-card dark:bg-card-dark sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-             <button onClick={onBack} className="p-2 hover:bg-surface dark:hover:bg-surface-dark rounded-full text-text-muted dark:text-text-muted-dark"><ArrowLeft className="w-5 h-5"/></button>
-             <div>
-               <h1 className="text-xl font-bold text-text-primary dark:text-text-primary-dark">{t('editor.editing', { slug })}</h1>
-             </div>
+      <div className="w-full lg:w-1/2 bg-card dark:bg-card-dark border-r border-border dark:border-border-dark h-screen flex flex-col">
+        <div className="p-4 border-b border-border-subtle dark:border-border-dark flex items-center justify-between bg-card dark:bg-card-dark flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+             <button onClick={onBack} className="p-2 hover:bg-surface dark:hover:bg-surface-dark rounded-full text-text-muted dark:text-text-muted-dark flex-shrink-0"><ArrowLeft className="w-5 h-5"/></button>
+             <h1 className="text-base font-bold text-text-primary dark:text-text-primary-dark truncate">{t('editor.editing', { slug })}</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {onLogout && (
               <button
                 onClick={onLogout}
-                className="px-4 py-2 rounded-full text-sm font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors"
+                className="px-3 py-2 rounded-full text-sm font-medium text-text-muted dark:text-text-muted-dark bg-card dark:bg-card-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors hidden sm:block"
               >
                 {t('auth.logout')}
               </button>
             )}
             <button
+              onClick={() => setShowPreviewOverlay(true)}
+              className="p-2 rounded-full text-text-muted dark:text-text-muted-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors lg:hidden"
+              title={t('editor.previewButton')}
+            >
+              <Eye className="w-5 h-5" />
+            </button>
+            <button
               onClick={onSave}
               disabled={isSaving}
-              className="px-5 py-2 bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark rounded-full text-sm font-bold flex items-center gap-2 hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark rounded-full text-sm font-bold flex items-center gap-2 hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors disabled:opacity-50"
             >
               {isSaving ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -4287,12 +4292,23 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
           </div>
         </div>
 
-        <div className="flex-1 p-6 space-y-8">
-           <div className="flex p-1 bg-surface dark:bg-surface-dark rounded-input mb-6">
-              {['details', 'links', 'images', 'style', 'privacy'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-2 text-sm font-medium rounded-button capitalize transition-all ${activeTab === tab ? 'bg-card dark:bg-surface-dark shadow text-text-primary dark:text-text-primary-dark' : 'text-text-muted dark:text-text-muted-dark hover:text-text-primary dark:hover:text-text-primary-dark'}`}>{t(`editor.tabs.${tab}`)}</button>
-              ))}
-           </div>
+        <div className="flex border-b border-border dark:border-border-dark flex-shrink-0">
+          {['details', 'links', 'images', 'style', 'privacy'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-3 text-xs font-semibold tracking-wide uppercase transition-all border-b-2 -mb-px ${
+                activeTab === tab
+                  ? 'border-action text-action dark:text-action'
+                  : 'border-transparent text-text-muted dark:text-text-muted-dark hover:text-text-primary dark:hover:text-text-primary-dark hover:border-border dark:hover:border-border-dark'
+              }`}
+            >
+              {t(`editor.tabs.${tab}`)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
 
            {activeTab === 'details' && (
              <div className="space-y-6">
@@ -4580,23 +4596,6 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
             )}
         </div>
 
-        {/* Bottom save button */}
-        <div className="p-6 pt-2 border-t border-border dark:border-border-dark">
-          <button
-            onClick={onSave}
-            disabled={isSaving}
-            className="w-full py-3.5 bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark rounded-full font-bold flex items-center justify-center gap-2 hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors disabled:opacity-50 active:scale-[0.98]"
-          >
-            {isSaving ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : isSuccess ? (
-              <Check className="w-4 h-4" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            {isSaving ? t('common.loading') : isSuccess ? t('common.save') : t('common.save')}
-          </button>
-        </div>
       </div>
 
       <div className="hidden lg:flex w-1/2 bg-border-subtle dark:bg-card-dark items-center justify-center p-10 relative">
@@ -4610,14 +4609,6 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
           <img src="/graphics/Swiish_Logo_DarkBg.svg" alt="Swiish" className="h-4 w-auto hidden dark:block swiish-logo" />
         </div>
       </div>
-
-      {/* Sticky preview button — mobile only */}
-      <button
-        onClick={() => setShowPreviewOverlay(true)}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-xl bg-card dark:bg-card-dark text-text-primary dark:text-text-primary-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-all active:scale-[0.97] lg:hidden"
-      >
-        <Eye className="w-4 h-4" /> {t('editor.previewButton')}
-      </button>
 
       {/* Mobile preview overlay */}
       {showPreviewOverlay && (

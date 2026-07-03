@@ -219,7 +219,7 @@
   },
   "editor": {
     "editing": "Editing: {{slug}}",
-    "previewButton": "Preview card",
+    "previewButton": "Preview vcard",
     "previewClose": "Close preview",
     "uploadFailed": "Upload failed",
     "uploadError": "Upload error",

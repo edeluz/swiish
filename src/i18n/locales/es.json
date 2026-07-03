@@ -219,8 +219,8 @@
   },
   "editor": {
     "editing": "Editando: {{slug}}",
-    "previewButton": "Ver plantilla",
-    "previewClose": "Cerrar vista previa",
+    "previewButton": "Vista previa vcard",
+    "previewClose": "Cerrar Vista previa",
     "uploadFailed": "Error al subir el archivo",
     "uploadError": "Error de carga",
     "lockedByOrg": "Bloqueado por la organización",
