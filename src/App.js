@@ -11,7 +11,7 @@ import {
   X, Check, User, MapPin, Briefcase, Building2, Lock, LogIn, AlertCircle,
   Plus, Trash2, ArrowLeft, Users, ExternalLink, RefreshCw, UserPlus,
   Download, FileText, Calendar, Video, Music, ShoppingCart, 
-  Link as LinkIcon, Youtube, Facebook, MessageCircle, Sun, Moon,
+  Link as LinkIcon, Youtube, Facebook, Sun, Moon,
   ChevronUp, ChevronDown, GripVertical, Settings, Copy, LogOut, QrCode
 } from 'lucide-react';
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
@@ -177,6 +177,12 @@ const sanitizeHTML = (html) => {
   });
 };
 
+const WhatsAppIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+);
+
 // --- ICONS MAPPING ---
 const ICON_MAP = {
   link: LinkIcon,
@@ -188,7 +194,7 @@ const ICON_MAP = {
   shop: ShoppingCart,
   youtube: Youtube,
   facebook: Facebook,
-  whatsapp: MessageCircle,
+  whatsapp: WhatsAppIcon,
   globe: Globe
 };
 
@@ -209,6 +215,7 @@ const getDefaultTemplate = (settings) => ({
   contact: {
     email: "",
     phone: "",
+    whatsapp: "",
     website: "",
   },
   social: { facebook: "", instagram: "", linkedin: "", twitter: "", github: "" },
@@ -559,6 +566,8 @@ function VersionBadge() {
       : isOutdated
         ? "Update available on GitHub"
         : "View on GitHub";
+
+  if (process.env.REACT_APP_SHOW_VERSION !== 'true') return null;
 
   return (
     <div className="fixed bottom-4 left-4 z-50">
@@ -2824,46 +2833,89 @@ const [settings, setSettings] = useState({
                       {userCards.length > 0 ? (
                         <>
                           {userCards.map(card => (
-                            <div key={card.slug} className="bg-surface dark:bg-surface-dark/50 rounded-badge p-5 border border-border dark:border-border-dark" style={{ aspectRatio: '1.586 / 1' }}>
+                            <div key={card.slug} className="relative bg-surface dark:bg-surface-dark/50 rounded-badge p-5 border border-border dark:border-border-dark" style={{ aspectRatio: '1.586 / 1' }}>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDelete(card.slug, card.userId); }}
+                                className="absolute top-2 right-2 p-1.5 text-text-muted-subtle dark:text-text-muted-dark opacity-40 hover:opacity-100 hover:text-error-text dark:hover:text-error-text-dark hover:bg-error-bg dark:hover:bg-error-bg-dark rounded-full transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                               <div className="w-full h-full flex flex-col">
-                                <div className="flex-1 flex flex-row items-start gap-3 mb-3 relative">
+                                <div className="flex-1 flex flex-row items-start gap-3 mb-3">
                                   <div className="w-20 h-20 rounded-full bg-surface dark:bg-surface-dark overflow-hidden border-thick border-border-subtle dark:border-border-dark flex-shrink-0">
                                     {card.avatar ? <img src={card.avatar} className="w-full h-full object-cover" alt="avatar" /> : <User className="w-full h-full p-5 text-text-muted-subtle dark:text-text-muted-dark" />}
                                   </div>
-                                   <button onClick={(e) => { e.stopPropagation(); handleDelete(card.slug, card.userId); }} className="absolute top-0 right-0 p-2 text-text-muted-subtle dark:text-text-muted-dark hover:text-error-text dark:hover:text-error-text-dark hover:bg-error-bg dark:hover:bg-error-bg-dark rounded-full transition-colors">
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
                                   <div className="flex-1 flex flex-col text-left min-w-0">
                                     <h3 className="font-bold text-text-primary dark:text-text-primary-dark text-base mb-0.5 truncate">{card.name}</h3>
                                     {card.title && <p className="text-text-muted dark:text-text-muted-dark text-xs mb-1 truncate">{card.title}</p>}
                                     <div className="space-y-0.5">
                                       {card.shortCode && (
-                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title={t('admin.dashboard.shortCodeUrlTitle')}>
-                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.shortLabel')}</span> /{card.shortCode}
+                                        <div className="flex items-center gap-1 min-w-0" title={t('admin.dashboard.shortCodeUrlTitle')}>
+                                          <a href={`/${card.shortCode}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate flex-1 hover:text-action dark:hover:text-action-dark hover:underline">
+                                            <span>{t('admin.dashboard.shortLabel')}</span> /{card.shortCode}
+                                          </a>
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/${card.shortCode}`).catch(() => {}); }}
+                                            className="flex-shrink-0 p-0.5 text-text-muted-subtle dark:text-text-muted-dark hover:text-action dark:hover:text-action-dark transition-colors"
+                                          >
+                                            <Copy className="w-3 h-3" />
+                                          </button>
                                         </div>
                                       )}
                                       {card.orgSlug && card.slug ? (
-                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title={t('admin.dashboard.orgScopedUrlTitle')}>
-                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.urlLabel')}</span> /{card.orgSlug}/{card.slug}
+                                        <div className="flex items-center gap-1 min-w-0" title={t('admin.dashboard.orgScopedUrlTitle')}>
+                                          <a href={`/${card.orgSlug}/${card.slug}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate flex-1 hover:text-action dark:hover:text-action-dark hover:underline">
+                                            <span>{t('admin.dashboard.urlLabel')}</span> /{card.orgSlug}/{card.slug}
+                                          </a>
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/${card.orgSlug}/${card.slug}`).catch(() => {}); }}
+                                            className="flex-shrink-0 p-0.5 text-text-muted-subtle dark:text-text-muted-dark hover:text-action dark:hover:text-action-dark transition-colors"
+                                          >
+                                            <Copy className="w-3 h-3" />
+                                          </button>
                                         </div>
                                       ) : card.slug ? (
-                                        <div className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate" title={t('admin.dashboard.legacyUrlTitle')}>
-                                          <span className="text-text-muted-subtle dark:text-text-muted-dark">{t('admin.dashboard.urlLabel')}</span> /{card.slug}
+                                        <div className="flex items-center gap-1 min-w-0" title={t('admin.dashboard.legacyUrlTitle')}>
+                                          <a href={`/${card.slug}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-text-muted-subtle dark:text-text-muted-dark font-mono truncate flex-1 hover:text-action dark:hover:text-action-dark hover:underline">
+                                            <span>{t('admin.dashboard.urlLabel')}</span> /{card.slug}
+                                          </a>
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/${card.slug}`).catch(() => {}); }}
+                                            className="flex-shrink-0 p-0.5 text-text-muted-subtle dark:text-text-muted-dark hover:text-action dark:hover:text-action-dark transition-colors"
+                                          >
+                                            <Copy className="w-3 h-3" />
+                                          </button>
                                         </div>
                                       ) : null}
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center justify-center gap-2 w-full mt-auto">
-                                  <a 
-                                    href={card.orgSlug && card.slug ? `/${card.orgSlug}/${card.slug}` : (card.slug ? `/${card.slug}` : `/${card.shortCode}`)} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
+                                <div className="flex items-center gap-1.5 w-full mt-auto">
+                                  <button onClick={() => handleEdit(card.slug, card.userId)} className="flex-1 py-2 text-xs font-medium text-confirm-text dark:text-confirm-text-dark bg-confirm dark:bg-confirm-dark rounded-button hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark flex items-center justify-center gap-1">
+                                    <Edit3 className="w-3 h-3"/> {t('admin.dashboard.edit')}
+                                  </button>
+                                  <a
+                                    href={card.orgSlug && card.slug ? `/${card.orgSlug}/${card.slug}` : (card.slug ? `/${card.slug}` : `/${card.shortCode}`)}
+                                    target="_blank"
+                                    rel="noreferrer"
                                     className="flex-1 py-2 text-xs font-medium text-confirm-text dark:text-confirm-text-dark bg-confirm dark:bg-confirm-dark rounded-button hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark flex items-center justify-center gap-1"
                                   >
                                     <ExternalLink className="w-3 h-3"/> {t('admin.dashboard.view')}
                                   </a>
-                                   <button onClick={() => handleEdit(card.slug, card.userId)} className="flex-1 py-2 text-xs font-medium text-confirm-text dark:text-confirm-text-dark bg-confirm dark:bg-confirm-dark rounded-button hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark flex items-center justify-center gap-1"><Edit3 className="w-3 h-3"/> {t('admin.dashboard.edit')}</button>
+                                  <button
+                                    onClick={() => {
+                                      const path = card.orgSlug && card.slug ? `/${card.orgSlug}/${card.slug}` : (card.slug ? `/${card.slug}` : `/${card.shortCode}`);
+                                      const url = `${window.location.origin}${path}`;
+                                      if (navigator.share) {
+                                        navigator.share({ title: card.name || card.slug, url }).catch(() => {});
+                                      } else {
+                                        navigator.clipboard.writeText(url).catch(() => {});
+                                      }
+                                    }}
+                                    className="p-2 text-text-secondary dark:text-text-secondary-dark bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-button hover:bg-border-subtle dark:hover:bg-card-dark transition-colors flex-shrink-0"
+                                  >
+                                    <Share2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -3061,6 +3113,7 @@ const [settings, setSettings] = useState({
             onClose={handleCreateCardCancel}
             onConfirm={handleCreateCardConfirm}
           />
+
         </>
       )}
       {view === 'member-empty' && (
@@ -3331,31 +3384,8 @@ function CardDisplay({ data, settings, darkMode, toggleDarkMode, showAlert }) {
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
   const [qrError, setQrError] = useState(null);
-  const [contactRevealed, setContactRevealed] = useState(false);
-  const [showSendOptions, setShowSendOptions] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
-  
-  // Lead capture deep links, using the card owner's contact details
-  const ownerPhone = contact.phone || '';
-  const ownerEmail = contact.email || '';
-  // Extract digits only from E.164 format (e.g., +447779331447 -> 447779331447)
-  // This works for both E.164 (+44...) and legacy formats
-  const ownerPhoneDigits = ownerPhone.replace(/\D/g, '');
-
-  const whatsappLink = ownerPhoneDigits && ownerPhoneDigits.length >= 8
-    ? `https://wa.me/${ownerPhoneDigits}?text=${encodeURIComponent(t('card.whatsappPrefill'))}`
-    : null;
-
-  const emailLink = ownerEmail
-    ? `mailto:${ownerEmail}?subject=${encodeURIComponent(
-        t('card.emailSubject')
-      )}&body=${encodeURIComponent(
-        t('card.emailBody')
-      )}`
-    : null;
-
-  const dropCallLink = ownerPhone ? `tel:${ownerPhone}` : null;
   
   // Helper functions for obfuscation
   const obfuscateContact = (value) => {
@@ -3746,7 +3776,7 @@ END:VCARD`;
           <button onClick={toggleDarkMode} className="bg-white/30 dark:bg-black/30 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/40 dark:hover:bg-black/40 transition-all border border-white/20 dark:border-white/10 shadow-sm">
             {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          <button onClick={() => setShowQR(true)} className="bg-white/30 dark:bg-black/30 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/40 dark:hover:bg-black/40 transition-all border border-white/20 dark:border-white/10 shadow-sm" aria-label={t('card.showQrLabel')} title={t('card.showQrLabel')}>
+          <button onClick={handleShareContact} className="bg-white/30 dark:bg-black/30 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/40 dark:hover:bg-black/40 transition-all border border-white/20 dark:border-white/10 shadow-sm" aria-label={t('card.shareContact')} title={t('card.shareContact')}>
             <Share2 className="w-5 h-5" />
           </button>
           {shouldShowInstallButton && (
@@ -3851,21 +3881,38 @@ END:VCARD`;
             : personal.workplace && <div className="flex items-center justify-center text-text-muted dark:text-text-muted-dark text-sm gap-2 mt-1"><Building2 className="w-4 h-4" /><span>{sanitizeText(personal.workplace)}</span></div>
           }
           {personal.location && <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1"><MapPin className="w-4 h-4" /><span>{sanitizeText(personal.location)}</span></div>}
-          {contact.email && (
-            <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1">
-              <Mail className="w-4 h-4" /><span>{sanitizeText(contact.email)}</span>
-            </div>
-          )}
-          {contact.phone && (
-            <div className="flex items-center justify-center text-text-muted-subtle dark:text-text-muted-dark text-sm gap-2 mt-1">
-              <Phone className="w-4 h-4" /><span>{sanitizeText(contact.phone)}</span>
+          {(contact.email || contact.phone || contact.whatsapp || contact.website || social.facebook || social.instagram || social.linkedin || social.twitter || social.github) && (
+            <div className="flex gap-2 justify-center mt-3 flex-wrap">
+              {(() => {
+                const waNum = (contact.whatsapp || contact.phone || '').replace(/\D/g, '');
+                const waUrl = waNum.length >= 8 ? `https://wa.me/${waNum}` : null;
+                return [
+                  { url: contact.email ? `mailto:${sanitizeText(contact.email)}` : null, Icon: Mail, external: false },
+                  { url: contact.phone ? `tel:${sanitizeText(contact.phone)}` : null, Icon: Phone, external: false },
+                  { url: waUrl, Icon: WhatsAppIcon, external: true },
+                  { url: contact.website, Icon: Globe, external: true },
+                  { url: social.facebook, Icon: Facebook, external: true },
+                  { url: social.instagram, Icon: Instagram, external: true },
+                  { url: social.linkedin, Icon: Linkedin, external: true },
+                  { url: social.twitter, Icon: Twitter, external: true },
+                  { url: social.github, Icon: Github, external: true },
+                ];
+              })().filter(s => s.url).map(({ url, Icon, external }, i) => (
+                <a key={i} href={url} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined}
+                  className="w-9 h-9 rounded-full bg-surface dark:bg-surface-dark border border-border dark:border-border-dark flex items-center justify-center text-text-secondary dark:text-text-secondary-dark transition-colors"
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = themeColor?.buttonStyle || '#4f46e5'; e.currentTarget.style.borderColor = themeColor?.buttonStyle || '#4f46e5'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.borderColor = ''; e.currentTarget.style.color = ''; }}
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              ))}
             </div>
           )}
         </div>
 
         {personal.bio && <div className="mb-6"><p className="text-text-secondary dark:text-text-secondary-dark leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHTML(personal.bio) }}></p></div>}
 
-        <div className="flex flex-col gap-3 mb-6">
+        <div className="flex gap-3 mb-6">
           {(() => {
             const color = settings?.theme_colors?.find(c => c.name === theme.color);
             const btnStyle = color?.buttonStyle ? { backgroundColor: color.buttonStyle } : { backgroundColor: getButtonColor(theme.color, settings) };
@@ -3873,175 +3920,14 @@ END:VCARD`;
               <>
                 <button
                   onClick={() => { setQrMode('rich'); setShowQR(true); }}
-                  className="flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-white shadow-lg transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full font-semibold text-sm text-white shadow-md transition-all active:scale-[0.98]"
                   style={btnStyle}
                 >
-                  <QrCode className="w-5 h-5" /> {t('card.shareQr')}
-                </button>
-                <button
-                  onClick={handleShareContact}
-                  className="flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors active:scale-[0.98]"
-                >
-                  <Share2 className="w-5 h-5" /> {t('card.shareContact')}
+                  <QrCode className="w-4 h-4" /> {t('card.shareQr')}
                 </button>
               </>
             );
           })()}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-8">
-          {(() => {
-            const requireInteraction = privacy.requireInteraction ?? true;
-            const shouldShowVCF = !requireInteraction || contactRevealed;
-            
-            // Only show VCF button if interaction is not required OR contact has been revealed
-            if (shouldShowVCF) {
-              const color = settings?.theme_colors?.find(c => c.name === theme.color);
-              if (color?.buttonStyle) {
-                const hoverColor = darkenHex(color.buttonStyle, 10);
-                return (
-                  <button 
-                    onClick={generateVCard} 
-                    className="col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-white shadow-lg transition-all active:scale-[0.98]"
-                    style={{ backgroundColor: color.buttonStyle }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = hoverColor;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = color.buttonStyle;
-                    }}
-                  >
-                    <Save className="w-5 h-5" /> {t('card.saveContact')}
-                  </button>
-                );
-              }
-              return (
-                <button
-                  onClick={generateVCard}
-                  className="col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-white shadow-lg transition-transform active:scale-[0.98]"
-                  style={{ backgroundColor: getButtonColor(theme.color, settings) }}
-                >
-                  <Save className="w-5 h-5" /> {t('card.saveContact')}
-                </button>
-              );
-            }
-            return null;
-          })()}
-          {(() => {
-            const requireInteraction = privacy.requireInteraction ?? true;
-            const useObfuscation = privacy.clientSideObfuscation ?? false;
-            const hasEmail = contact.email;
-            const hasPhone = contact.phone;
-            
-            // If interaction required and not yet revealed, show reveal button
-            if (requireInteraction && !contactRevealed && (hasEmail || hasPhone)) {
-              return (
-                <button
-                  onClick={() => setContactRevealed(true)}
-                  className="col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
-                >
-                  <Eye className="w-5 h-5" /> {t('card.seeMyDetails')}
-                </button>
-              );
-            }
-            
-            // Get actual contact values
-            const emailValue = hasEmail ? contact.email : '';
-            const phoneValue = hasPhone ? contact.phone : '';
-            
-            // If obfuscation is enabled, store obfuscated values in data attributes
-            const emailData = useObfuscation && emailValue ? obfuscateContact(emailValue) : '';
-            const phoneData = useObfuscation && phoneValue ? obfuscateContact(phoneValue) : '';
-            
-            return (
-              <>
-                {hasEmail && (
-                  <a
-                    href={useObfuscation ? '#' : `mailto:${emailValue}`}
-                    data-email={useObfuscation ? emailData : undefined}
-                    onClick={(e) => {
-                      if (useObfuscation) {
-                        e.preventDefault();
-                        const actualEmail = deobfuscateContact(e.currentTarget.dataset.email);
-                        window.location.href = `mailto:${actualEmail}`;
-                      }
-                    }}
-                    className="flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
-                  >
-                    <Mail className="w-5 h-5" /> {t('card.email')}
-                  </a>
-                )}
-                {hasPhone && (
-                  <a
-                    href={useObfuscation ? '#' : `tel:${phoneValue}`}
-                    data-phone={useObfuscation ? phoneData : undefined}
-                    onClick={(e) => {
-                      if (useObfuscation) {
-                        e.preventDefault();
-                        const actualPhone = deobfuscateContact(e.currentTarget.dataset.phone);
-                        window.location.href = `tel:${actualPhone}`;
-                      }
-                    }}
-                    className="flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
-                  >
-                    <Phone className="w-5 h-5" /> {t('card.call')}
-                  </a>
-                )}
-              </>
-            );
-          })()}
-        </div>
-
-        {/* Send your details CTA */}
-        <div className="mb-8">
-          <button
-            type="button"
-            onClick={() => setShowSendOptions(open => !open)}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-confirm text-confirm-text dark:bg-confirm-dark dark:text-confirm-text-dark hover:opacity-90 transition-colors shadow-lg active:scale-[0.98]"
-          >
-            <MessageCircle className="w-5 h-5" />
-            {showSendOptions ? t('card.hideSendOptions') : t('card.sendDetails')}
-          </button>
-
-          {showSendOptions && (
-            <div className="mt-3 space-y-2 rounded-card border border-border dark:border-border-dark bg-surface/60 dark:bg-card-dark/60 p-3 text-left">
-              {whatsappLink && (
-                <a
-                  href={whatsappLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-full font-semibold bg-success dark:bg-success-dark text-white hover:bg-success-hover dark:hover:bg-success-hover-dark transition-colors"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  {t('card.whatsappCta')}
-                </a>
-              )}
-
-              {emailLink && (
-                <a
-                  href={emailLink}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
-                >
-                  <Mail className="w-5 h-5" />
-                  {t('card.emailCta')}
-                </a>
-              )}
-
-              {dropCallLink && (
-                <a
-                  href={dropCallLink}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors border border-border dark:border-border-dark"
-                >
-                  <Phone className="w-5 h-5" />
-                  {t('card.dropCallCta')}
-                </a>
-              )}
-
-              <p className="mt-1 text-[11px] text-text-muted dark:text-text-muted-dark text-center">
-                {t('card.shareDisclaimer')}
-              </p>
-            </div>
-          )}
         </div>
 
         {links.length > 0 && (
@@ -4115,15 +4001,6 @@ END:VCARD`;
             })}
           </div>
         )}
-
-        <div className="grid grid-cols-4 gap-3 mb-8">
-           <SocialIcon url={contact.website} icon={Globe} label="Web" themeColor={themeColor} />
-           <SocialIcon url={social.facebook} icon={Facebook} label="Facebook" themeColor={themeColor} />
-           <SocialIcon url={social.instagram} icon={Instagram} label="Insta" themeColor={themeColor} />
-           <SocialIcon url={social.linkedin} icon={Linkedin} label="LinkedIn" themeColor={themeColor} />
-           <SocialIcon url={social.twitter} icon={Twitter} label="X" themeColor={themeColor} />
-           <SocialIcon url={social.github} icon={Github} label="Git" themeColor={themeColor} />
-        </div>
 
         {/* Swiish logo */}
         <div className="bg-card dark:bg-card-dark pb-4 text-center space-y-2 mt-auto lg:pb-4">
@@ -4337,15 +4214,31 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                 <div className="h-px bg-surface dark:bg-surface-dark" />
                 <div className="space-y-4">
                   <Input icon={Mail} placeholder={t('card.email')} value={data.contact.email} onChange={v => handleInputChange('contact', 'email', v)} type="email" />
-                  <div className="space-y-1">
-                    <PhoneInput
-                      international
-                      defaultCountry="CO"
-                      value={data.contact.phone || ''}
-                      onChange={(value) => handleInputChange('contact', 'phone', value || '')}
-                      placeholder={t('editor.fields.phone')}
-                      flags={flags}
-                    />
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase tracking-wide flex-shrink-0 w-20 text-right">{t('editor.fields.mobileNumber')}</span>
+                    <div className="flex-1 min-w-0">
+                      <PhoneInput
+                        international
+                        defaultCountry="CO"
+                        value={data.contact.phone || ''}
+                        onChange={(value) => handleInputChange('contact', 'phone', value || '')}
+                        placeholder={t('editor.fields.phone')}
+                        flags={flags}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase tracking-wide flex-shrink-0 w-20 text-right">{t('editor.fields.whatsapp')}</span>
+                    <div className="flex-1 min-w-0">
+                      <PhoneInput
+                        international
+                        defaultCountry="CO"
+                        value={data.contact.whatsapp || ''}
+                        onChange={(value) => handleInputChange('contact', 'whatsapp', value || '')}
+                        placeholder="WhatsApp"
+                        flags={flags}
+                      />
+                    </div>
                   </div>
                   <Input icon={Globe} placeholder={t('editor.fields.website')} value={data.contact.website} onChange={v => handleInputChange('contact', 'website', v)} type="url" />
                   <Input icon={Facebook} placeholder="Facebook" value={data.social.facebook || ''} onChange={v => handleInputChange('social', 'facebook', v)} type="url" />

@@ -2303,6 +2303,7 @@ app.post('/api/cards/:slug', requireAuth, apiLimiter, csrfProtection, [
     contact: {
       email: (req.body.contact?.email || '').trim(),
       phone: (req.body.contact?.phone || '').trim().substring(0, 50),
+      whatsapp: (req.body.contact?.whatsapp || '').trim().substring(0, 50),
       website: (() => { const w = (req.body.contact?.website || '').trim(); return w && validator.isURL(w, { protocols: ['http', 'https'] }) ? w : ''; })()
     },
     social: {

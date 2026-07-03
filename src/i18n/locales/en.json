@@ -114,6 +114,7 @@
       "legacyUrlTitle": "Legacy URL",
       "view": "View",
       "edit": "Edit",
+      "share": "Share",
       "noPeopleYet": "No people yet. Click \"New Person\" to start.",
       "whatToDo": "What would you like to do?",
       "inviteUser": "Invite User",
@@ -181,7 +182,7 @@
     "shareDisclaimer": "Only shared with me, never sold.",
     "showQrLabel": "Show QR code",
     "shareQr": "Share QR code",
-    "hideQr": "Hide QR code",
+    "hideQr": "Exit",
     "shareContact": "Share contact",
     "installAppLabel": "Install app for offline access",
     "offlineQrReady": "Offline QR ready",
@@ -190,8 +191,8 @@
     "emailBody": "Hi, we met via your Swiish card.\nMy name is ...\nMy phone number is ...\nMy email address is ...",
     "qr": {
       "close": "Close",
-      "linkOnly": "Link only",
-      "fullDetails": "Full details",
+      "linkOnly": "Share URL",
+      "fullDetails": "Save contact",
       "savedDetails": "Saved details",
       "offlineMode": "Offline mode",
       "richOfflineHint": "This code includes your saved Swiish details and a link to your card when scanned with an online device.",
@@ -249,6 +250,9 @@
       "freelancerConfirmNo": "No, just hide company",
       "bio": "Bio",
       "phone": "Phone",
+      "mobileNumber": "Mobile",
+      "whatsapp": "WhatsApp",
+      "whatsappSync": "Same number as phone",
       "website": "Website"
     },
     "links": {
