@@ -763,9 +763,9 @@ const handleValidationErrors = (req, res, next) => {
       errorMessage = 'Role must be either "owner" or "member"';
     }
     
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: errorMessage,
-      details: NODE_ENV === 'development' ? errors.array() : undefined
+      details: errors.array().map(e => ({ field: e.param || e.path, message: e.msg }))
     });
   }
   next();
@@ -1665,12 +1665,7 @@ const cardDataValidation = [
     return true;
   }),
   body('contact.phone').optional().trim().isLength({ max: 50 }).withMessage('Phone too long'),
-  body('contact.website').optional().trim().custom((value) => {
-    if (value && !validator.isURL(value, { protocols: ['http', 'https'] })) {
-      throw new Error('Invalid website URL');
-    }
-    return true;
-  }),
+  body('contact.website').optional().trim(),
   body('social.linkedin').optional().trim().custom((value) => {
     if (value && !validator.isURL(value, { protocols: ['http', 'https'] })) {
       throw new Error('Invalid LinkedIn URL');
@@ -2308,12 +2303,13 @@ app.post('/api/cards/:slug', requireAuth, apiLimiter, csrfProtection, [
     contact: {
       email: (req.body.contact?.email || '').trim(),
       phone: (req.body.contact?.phone || '').trim().substring(0, 50),
-      website: (req.body.contact?.website || '').trim()
+      website: (() => { const w = (req.body.contact?.website || '').trim(); return w && validator.isURL(w, { protocols: ['http', 'https'] }) ? w : ''; })()
     },
     social: {
+      facebook: (req.body.social?.facebook || '').trim(),
+      instagram: (req.body.social?.instagram || '').trim(),
       linkedin: (req.body.social?.linkedin || '').trim(),
       twitter: (req.body.social?.twitter || '').trim(),
-      instagram: (req.body.social?.instagram || '').trim(),
       github: (req.body.social?.github || '').trim()
     },
     theme: req.body.theme || { color: 'indigo', style: 'modern' },

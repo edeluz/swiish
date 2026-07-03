@@ -12,7 +12,7 @@ import {
   Plus, Trash2, ArrowLeft, Users, ExternalLink, RefreshCw, UserPlus,
   Download, FileText, Calendar, Video, Music, ShoppingCart, 
   Link as LinkIcon, Youtube, Facebook, MessageCircle, Sun, Moon,
-  ChevronUp, ChevronDown, GripVertical, Settings, Copy, LogOut
+  ChevronUp, ChevronDown, GripVertical, Settings, Copy, LogOut, QrCode
 } from 'lucide-react';
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -211,7 +211,7 @@ const getDefaultTemplate = (settings) => ({
     phone: "",
     website: "",
   },
-  social: { linkedin: "", twitter: "", instagram: "", github: "" },
+  social: { facebook: "", instagram: "", linkedin: "", twitter: "", github: "" },
   theme: { color: "indigo", style: "modern" },
   images: { avatar: null, banner: null },
   links: [],
@@ -382,7 +382,7 @@ function Modal({ isOpen, onClose, type = 'info', title, message, onConfirm, conf
           <Icon className={`w-6 h-6 ${style.iconColor}`} />
         </div>
         {title && <h3 className="text-xl font-bold text-text-primary dark:text-text-primary-dark text-center mb-2">{title}</h3>}
-        {message && <p className="text-text-secondary dark:text-text-secondary-dark text-center mb-6">{message}</p>}
+        {message && <p className={`text-text-secondary dark:text-text-secondary-dark mb-6 whitespace-pre-wrap ${message.includes('\n') ? 'text-left text-xs font-mono' : 'text-center'}`}>{message}</p>}
         {hasInput && (
           <div className="mb-6">
             {inputLabel && <label className="block text-sm font-medium text-text-primary dark:text-text-secondary-dark mb-2">{inputLabel}</label>}
@@ -658,6 +658,16 @@ function RecoveryAnswersForm({ onSubmit, onSkip, submitLabel, loading, error, su
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="flex gap-3 pb-1">
+        {onSkip && (
+          <button type="button" onClick={onSkip} className="flex-1 py-3 rounded-full border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium hover:bg-surface dark:hover:bg-surface-dark transition-colors text-sm">
+            {t('common.skip')}
+          </button>
+        )}
+        <button type="submit" disabled={loading} className={`py-3 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors text-sm ${onSkip ? 'flex-1' : 'w-full'}`}>
+          {submitLabel || t('common.save')}
+        </button>
+      </div>
       {configured === null && (
         <div className="flex items-center gap-2 py-2">
           <div className="w-3 h-3 rounded-full border-2 border-text-muted dark:border-text-muted-dark border-t-transparent animate-spin" />
@@ -684,16 +694,6 @@ function RecoveryAnswersForm({ onSubmit, onSkip, submitLabel, loading, error, su
       <input type="text" value={primarySchool} onChange={e => setPrimarySchool(e.target.value)} placeholder={t('auth.recovery.primarySchool')} className={inputCls} required />
       {configured && <p className="text-xs text-text-muted dark:text-text-muted-dark">{t('account.recoveryUpdateHint')}</p>}
       {error && <p className="text-sm text-error-text dark:text-error-text-dark">{error}</p>}
-      <div className="flex gap-3 pt-1">
-        {onSkip && (
-          <button type="button" onClick={onSkip} className="flex-1 py-3 rounded-full border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium hover:bg-surface dark:hover:bg-surface-dark transition-colors text-sm">
-            {t('common.skip')}
-          </button>
-        )}
-        <button type="submit" disabled={loading} className={`py-3 rounded-full bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark font-bold hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors text-sm ${onSkip ? 'flex-1' : 'w-full'}`}>
-          {submitLabel || t('common.save')}
-        </button>
-      </div>
     </form>
   );
 }
@@ -2213,8 +2213,20 @@ const [settings, setSettings] = useState({
           fetchCardList();
           setTimeout(() => setIsSuccess(false), 2000);
         } else {
-          showAlert('Save failed', 'error');
+          let detail = `HTTP ${res.status}`;
+          try {
+            const errBody = await res.json();
+            if (errBody.error) detail += ` — ${errBody.error}`;
+            else if (errBody.message) detail += ` — ${errBody.message}`;
+            const fieldErrors = errBody.details || errBody.errors;
+            if (Array.isArray(fieldErrors) && fieldErrors.length) {
+              detail += '\n' + fieldErrors.map(e => `· ${e.field || e.param || ''}: ${e.message || e.msg}`).join('\n');
+            }
+          } catch (_) { /* non-JSON body */ }
+          showAlert(`Error al guardar\n${detail}`, 'error', 'Error al guardar');
         }
+      } catch (networkErr) {
+        showAlert(`Error de red: ${networkErr.message}`, 'error', 'Error al guardar');
       } finally {
         setIsSaving(false);
       }
@@ -3594,6 +3606,19 @@ END:VCARD`;
     document.body.removeChild(link);
   };
 
+  const handleShareContact = async () => {
+    const name = `${personal.firstName || ''} ${personal.lastName || ''}`.trim();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: name, url: window.location.href });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+    generateVCard();
+  };
+
   const currentQrDataUrl = qrMode === 'simple' ? qrSimpleDataUrl : qrRichDataUrl;
 
   // Extract short code for display
@@ -3688,7 +3713,9 @@ END:VCARD`;
           </div>
 
           {/* Close button */}
-          <button onClick={() => setShowQR(false)} className="w-full max-w-md mx-auto py-3 bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark font-bold rounded-input hover:bg-surface dark:hover:bg-surface-dark text-sm transition-colors">{t('card.qr.close')}</button>
+          <button onClick={() => setShowQR(false)} className="w-full max-w-md mx-auto flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark text-sm transition-colors active:scale-[0.98]">
+            <QrCode className="w-4 h-4" /> {t('card.hideQr')}
+          </button>
 
           {/* Swiish logo */}
           <div className="bg-card dark:bg-card-dark text-center space-y-2 mt-[24px] mb-[12px]">
@@ -3836,7 +3863,31 @@ END:VCARD`;
           )}
         </div>
 
-        {personal.bio && <div className="mb-8"><p className="text-text-secondary dark:text-text-secondary-dark leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHTML(personal.bio) }}></p></div>}
+        {personal.bio && <div className="mb-6"><p className="text-text-secondary dark:text-text-secondary-dark leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHTML(personal.bio) }}></p></div>}
+
+        <div className="flex flex-col gap-3 mb-6">
+          {(() => {
+            const color = settings?.theme_colors?.find(c => c.name === theme.color);
+            const btnStyle = color?.buttonStyle ? { backgroundColor: color.buttonStyle } : { backgroundColor: getButtonColor(theme.color, settings) };
+            return (
+              <>
+                <button
+                  onClick={() => { setQrMode('rich'); setShowQR(true); }}
+                  className="flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-white shadow-lg transition-all active:scale-[0.98]"
+                  style={btnStyle}
+                >
+                  <QrCode className="w-5 h-5" /> {t('card.shareQr')}
+                </button>
+                <button
+                  onClick={handleShareContact}
+                  className="flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold bg-surface dark:bg-surface-dark text-text-primary dark:text-text-primary-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors active:scale-[0.98]"
+                >
+                  <Share2 className="w-5 h-5" /> {t('card.shareContact')}
+                </button>
+              </>
+            );
+          })()}
+        </div>
 
         <div className="grid grid-cols-2 gap-3 mb-8">
           {(() => {
@@ -4067,9 +4118,10 @@ END:VCARD`;
 
         <div className="grid grid-cols-4 gap-3 mb-8">
            <SocialIcon url={contact.website} icon={Globe} label="Web" themeColor={themeColor} />
+           <SocialIcon url={social.facebook} icon={Facebook} label="Facebook" themeColor={themeColor} />
+           <SocialIcon url={social.instagram} icon={Instagram} label="Insta" themeColor={themeColor} />
            <SocialIcon url={social.linkedin} icon={Linkedin} label="LinkedIn" themeColor={themeColor} />
            <SocialIcon url={social.twitter} icon={Twitter} label="X" themeColor={themeColor} />
-           <SocialIcon url={social.instagram} icon={Instagram} label="Insta" themeColor={themeColor} />
            <SocialIcon url={social.github} icon={Github} label="Git" themeColor={themeColor} />
         </div>
 
@@ -4098,6 +4150,16 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
   const [isUploading, setIsUploading] = useState(false);
+  const [showPreviewOverlay, setShowPreviewOverlay] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 }
@@ -4270,9 +4332,10 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
                     />
                   </div>
                   <Input icon={Globe} placeholder={t('editor.fields.website')} value={data.contact.website} onChange={v => handleInputChange('contact', 'website', v)} type="url" />
+                  <Input icon={Facebook} placeholder="Facebook" value={data.social.facebook || ''} onChange={v => handleInputChange('social', 'facebook', v)} type="url" />
+                  <Input icon={Instagram} placeholder="Instagram" value={data.social.instagram} onChange={v => handleInputChange('social', 'instagram', v)} type="url" />
                   <Input icon={Linkedin} placeholder="LinkedIn" value={data.social.linkedin} onChange={v => handleInputChange('social', 'linkedin', v)} type="url" />
                   <Input icon={Twitter} placeholder="Twitter / X" value={data.social.twitter} onChange={v => handleInputChange('social', 'twitter', v)} type="url" />
-                  <Input icon={Instagram} placeholder="Instagram" value={data.social.instagram} onChange={v => handleInputChange('social', 'instagram', v)} type="url" />
                   <Input icon={Github} placeholder="Github" value={data.social.github} onChange={v => handleInputChange('social', 'github', v)} type="url" />
                 </div>
              </div>
@@ -4516,8 +4579,26 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
               </div>
             )}
         </div>
+
+        {/* Bottom save button */}
+        <div className="p-6 pt-2 border-t border-border dark:border-border-dark">
+          <button
+            onClick={onSave}
+            disabled={isSaving}
+            className="w-full py-3.5 bg-confirm dark:bg-confirm-dark text-confirm-text dark:text-confirm-text-dark rounded-full font-bold flex items-center justify-center gap-2 hover:bg-confirm-hover dark:hover:bg-confirm-hover-dark transition-colors disabled:opacity-50 active:scale-[0.98]"
+          >
+            {isSaving ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : isSuccess ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {isSaving ? t('common.loading') : isSuccess ? t('common.save') : t('common.save')}
+          </button>
+        </div>
       </div>
-      
+
       <div className="hidden lg:flex w-1/2 bg-border-subtle dark:bg-card-dark items-center justify-center p-10 relative">
           <div className="w-[375px] h-[750px] bg-card dark:bg-main-dark rounded-[3rem] shadow-2xl border-device border-text-primary dark:border-border-dark overflow-hidden relative">
             <CardDisplay data={data} settings={settings} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
@@ -4529,6 +4610,31 @@ function EditorView({ data, setData, onBack, onSave, slug, settings, csrfToken, 
           <img src="/graphics/Swiish_Logo_DarkBg.svg" alt="Swiish" className="h-4 w-auto hidden dark:block swiish-logo" />
         </div>
       </div>
+
+      {/* Sticky preview button — mobile only */}
+      <button
+        onClick={() => setShowPreviewOverlay(true)}
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-xl bg-card dark:bg-card-dark text-text-primary dark:text-text-primary-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-all active:scale-[0.97] lg:hidden"
+      >
+        <Eye className="w-4 h-4" /> {t('editor.previewButton')}
+      </button>
+
+      {/* Mobile preview overlay */}
+      {showPreviewOverlay && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-start overflow-y-auto lg:hidden">
+          <div className="w-full max-w-sm mx-auto pt-4 pb-8 px-4">
+            <button
+              onClick={() => setShowPreviewOverlay(false)}
+              className="w-full flex items-center justify-center gap-2 py-3 mb-4 rounded-full font-semibold text-sm bg-card dark:bg-card-dark text-text-primary dark:text-text-primary-dark border border-border dark:border-border-dark hover:bg-surface dark:hover:bg-surface-dark transition-colors"
+            >
+              <X className="w-4 h-4" /> {t('editor.previewClose')}
+            </button>
+            <div className="w-full bg-card dark:bg-main-dark rounded-[2.5rem] shadow-2xl border-4 border-white/20 overflow-hidden">
+              <CardDisplay data={data} settings={settings} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

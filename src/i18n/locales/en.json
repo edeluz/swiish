@@ -180,6 +180,9 @@
     "dropCallCta": "Drop call me your number",
     "shareDisclaimer": "Only shared with me, never sold.",
     "showQrLabel": "Show QR code",
+    "shareQr": "Share QR code",
+    "hideQr": "Hide QR code",
+    "shareContact": "Share contact",
     "installAppLabel": "Install app for offline access",
     "offlineQrReady": "Offline QR ready",
     "whatsappPrefill": "Hi, we met via your Swiish card. My name is ... and my number/email is ...",
@@ -216,6 +219,8 @@
   },
   "editor": {
     "editing": "Editing: {{slug}}",
+    "previewButton": "Preview card",
+    "previewClose": "Close preview",
     "uploadFailed": "Upload failed",
     "uploadError": "Upload error",
     "lockedByOrg": "Locked by Organisation",
