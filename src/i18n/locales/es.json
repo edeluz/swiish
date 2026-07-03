@@ -287,7 +287,11 @@
       "headerBanner": "Banner de cabecera",
       "lockedMessage": "Tu organización deshabilitó la carga de imágenes personalizadas. Contactá a tu administrador para habilitar esta función.",
       "upload": "Subir",
-      "remove": "Eliminar"
+      "remove": "Eliminar",
+      "cropTitle": "Ajustar imagen",
+      "cropZoom": "Zoom",
+      "cropRotate": "Rotar",
+      "cropApply": "Aplicar"
     },
     "style": {
       "lockedMessage": "Tu organización deshabilitó la personalización del color del tema. Tu tarjeta usará el color de tema predeterminado."

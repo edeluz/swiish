@@ -287,7 +287,11 @@
       "headerBanner": "Header Banner",
       "lockedMessage": "Your organisation has disabled custom image uploads. Contact your administrator to enable this feature.",
       "upload": "Upload",
-      "remove": "Remove"
+      "remove": "Remove",
+      "cropTitle": "Adjust image",
+      "cropZoom": "Zoom",
+      "cropRotate": "Rotate",
+      "cropApply": "Apply"
     },
     "style": {
       "lockedMessage": "Your organisation has disabled theme colour customisation. Your card will use the default theme colour."
